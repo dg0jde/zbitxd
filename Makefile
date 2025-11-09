@@ -6,6 +6,7 @@ STATEDIR ?= /var/lib/$(OWNER)
 SHAREDIR ?= $(PREFIX)/share/$(OWNER)
 SOURCES = $(wildcard *.c)
 OBJECTS = $(SOURCES:.c=.o)
+FFTOBJ = ft8_lib/.build/fft/kiss_fft.o ft8_lib/.build/fft/kiss_fftr.o
 HEADERS = $(wildcard *.h)
 CFLAGS = -I.
 LIBS = -lwiringPi -lasound -lm -lfftw3 -lfftw3f -pthread -lncurses -lsqlite3 -lsystemd ft8_lib/libft8.a
@@ -23,7 +24,7 @@ LINK = gcc
 STRIP = strip
 
 $(TARGET): create_configure.h $(OBJECTS) ft8_lib/libft8.a
-	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(LIBPATH) $(LIBS)
+	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(FFTOBJ) $(LIBPATH) $(LIBS)
 
 .c.o: $(HEADERS)
 	$(CC) -c $(CFLAGS) $(DEBUGFLAGS) $(INCPATH) -o $@ $<
