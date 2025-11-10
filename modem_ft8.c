@@ -583,9 +583,7 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
 
            char buff[1000];
 
-           float snr = cand->score * 0.5f; // TODO: compute better approximation of SNR
-           //~ sprintf(buff, "%s %+05.1f %-4.0f ~  %s\n", time_str, snr, freq_hz, text); // TODO looks better; score isn't interesting
-           sprintf(buff, "%s %3d %+03d %-4.0f ~  %s\n", time_str, cand->score, lroundf(snr), freq_hz, text);
+           sprintf(buff, "%s %3d %+03d %-4.0f ~  %s\n", time_str, cand->score, cand->snr, freq_hz, text);
            LOG(LOG_DEBUG, "-> %s\n", buff);
 					if (strstr(buff, mycallsign_upper)){
 						write_console(FONT_FT8_REPLY, buff);
