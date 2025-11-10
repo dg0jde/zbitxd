@@ -73,7 +73,7 @@ reboot
 
 Then install the packages that zbitxd requires as dependencies:
 ```
-sudo apt install git libasound2-dev libfftw3-dev libncurses-dev libsqlite3-dev libsystemd-dev sqlite3
+sudo apt install git libasound2-dev libfftw3-dev libsqlite3-dev libsystemd-dev sqlite3
 ```
 Of course, any other packages can be added.
 

@@ -9,7 +9,7 @@ OBJECTS = $(SOURCES:.c=.o)
 FFTOBJ = ft8_lib/.build/fft/kiss_fft.o ft8_lib/.build/fft/kiss_fftr.o
 HEADERS = $(wildcard *.h)
 CFLAGS = -I.
-LIBS = -lwiringPi -lasound -lm -lfftw3 -lfftw3f -pthread -lncurses -lsqlite3 -lsystemd ft8_lib/libft8.a
+LIBS = -lwiringPi -lasound -lm -lfftw3 -lfftw3f -pthread -lsqlite3 -lsystemd ft8_lib/libft8.a
 ifdef SBITX_UNUSED
 ## remove and print unused code
 CFLAGS += -ffunction-sections -fdata-sections
