@@ -76,7 +76,7 @@ void macro_label(int fn_key, char *label){
 
 int  macro_load(char *filename, char *output){
 	char macro_line[255];
-	char full_path[200];	//dangerous, find the MAX_PATH and replace 200 with it
+	char full_path[PATH_MAX];
 
 	strcpy(full_path, SHAREDIR "/web/");
 	strcat(full_path, filename);

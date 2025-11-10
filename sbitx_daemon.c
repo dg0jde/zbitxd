@@ -6,6 +6,7 @@ The initial sync between the gui values, the core radio values, settings, et al 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
 #include <linux/types.h>
 #include <math.h>
 #include <fcntl.h>
@@ -2443,7 +2444,7 @@ void zbitx_get_spectrum(char *buff){
 }
 
 static void zbitx_logs(){
-	char logbook_path[200];
+	char logbook_path[PATH_MAX];
 	char row_response[1000], row[1000];
 	char query[100];
 	char args[100];
@@ -2999,7 +3000,7 @@ void do_control_action(char *cmd){
 		}
 	}
 	else if (!strcmp(request, "REC ON")){
-		char fullpath[200];	//dangerous, find the MAX_PATH and replace 200 with it
+		char fullpath[PATH_MAX];
 
 		char *path = getenv("HOME");
 		time(&record_start);

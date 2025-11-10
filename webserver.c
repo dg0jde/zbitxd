@@ -93,7 +93,7 @@ static void get_audio(struct mg_connection *c){
 }
 
 static void get_logs(struct mg_connection *c, char *args){
-	char logbook_path[200];
+	char logbook_path[PATH_MAX];
 	char row_response[1000], row[1000];
 	char query[100];
 	int	row_id;
