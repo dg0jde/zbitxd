@@ -151,7 +151,7 @@ struct console_line {
 	char text[MAX_LINE_LENGTH];
 	int style;
 };
-static int console_style = FONT_LOG;
+static int console_style = STYLE_LOG;
 static struct console_line console_stream[MAX_CONSOLE_LINES];
 int console_current_line = 0;
 struct Queue q_web;
@@ -821,29 +821,29 @@ void  web_write(int style, char *data){
 	char tag[20];
     //int n1 = q_length(&q_web);
 	switch(style){
-		case FONT_FT8_REPLY:
-		case FONT_FT8_RX:
+		case STYLE_FT8_REPLY:
+		case STYLE_FT8_RX:
 			strcpy(tag, "WSJTX-RX");
 			break;
-		case FONT_FLDIGI_RX:
+		case STYLE_FLDIGI_RX:
 			strcpy(tag, "FLDIGI-RX");
 			break;
-		case FONT_CW_RX:
+		case STYLE_CW_RX:
 			strcpy(tag, "CW-RX");
 			break;
-		case FONT_FT8_TX:
+		case STYLE_FT8_TX:
 			strcpy(tag, "WSJTX-TX");
 			break;
-		case FONT_FT8_QUEUED:
+		case STYLE_FT8_QUEUED:
 			strcpy(tag, "WSJTX-Q");
 			break;
-		case FONT_FLDIGI_TX:
+		case STYLE_FLDIGI_TX:
 			strcpy(tag, "FLDIGI-TX");
 			break;
-		case FONT_CW_TX:
+		case STYLE_CW_TX:
 			strcpy(tag, "CW-TX");
 			break;
-		case FONT_TELNET:
+		case STYLE_TELNET:
 			strcpy(tag, "TELNET");
 			break;
 		default:
@@ -936,14 +936,14 @@ void write_console(int style, char *raw_text){
 			console_init_next_line();	
 		console_stream[console_current_line].style = style;
 		switch(style){
-			case FONT_FT8_RX:
-		case FONT_FLDIGI_RX:
-			case FONT_CW_RX:
+			case STYLE_FT8_RX:
+		case STYLE_FLDIGI_RX:
+			case STYLE_CW_RX:
 				break;
-			case FONT_FT8_TX:
-			case FONT_FLDIGI_TX:
-			case FONT_CW_TX:
-			case FONT_FT8_REPLY:
+			case STYLE_FT8_TX:
+			case STYLE_FLDIGI_TX:
+			case STYLE_CW_TX:
+			case STYLE_FT8_REPLY:
 				break;
 			default:
 				break;
@@ -1147,7 +1147,7 @@ void enter_qso(){
 	sprintf(buff, "Logged: %s %s-%s %s-%s\n", 
 		field_str("CALL"), field_str("SENT"), field_str("NR"), 
 		field_str("RECV"), field_str("EXCH"));
-	write_console(FONT_LOG, buff);
+	write_console(STYLE_LOG, buff);
 	update_logs = 1;
 	//wipe the call if not FT8
 	if (strcmp(field_str("MODE"), "FT8"))
@@ -1618,7 +1618,7 @@ int do_status(struct field *f, int event, int a, int b, int c){
 		//struct tm *tmp = gmtime(&now);
 		//sprintf(buff, "%04d/%02d/%02d %02d:%02d:%02dZ",  
 		//	tmp->tm_year + 1900, tmp->tm_mon + 1, tmp->tm_mday, tmp->tm_hour, tmp->tm_min, tmp->tm_sec); 
-		//int width = measure_text(gfx, buff, FONT_FIELD_LABEL);
+		//int width = measure_text(gfx, buff, STYLE_FIELD_LABEL);
 		//int line_height = font_table[f->font_index].height; 	
 		//strcpy(f->value, buff);
 		f->is_dirty = 1;
@@ -1690,7 +1690,7 @@ int do_text(struct field *f, int event, int a, int b, int c){
 		//y = f->y + 1;
 		//text_line_width= measure_text(gfx, f->value, f->font_index);
 		//if (!strlen(f->value))
-		//	draw_text(gfx, f->x + 1, y+1, f->label, FONT_FIELD_LABEL);
+		//	draw_text(gfx, f->x + 1, y+1, f->label, STYLE_FIELD_LABEL);
 		//else 
 		//	draw_text(gfx, f->x + 1, y+1, f->value, f->font_index);
 		////draw the text cursor, if there is no text, the text baseline is zero
@@ -1789,19 +1789,19 @@ int do_tuning(struct field *f, int event, int a, int b, int c){
     char temp_char[100];
     //sprintf(temp_char, "delta: %d", delta_us);
     //strcat(temp_char,"\r\n");
-    //write_console(FONT_LOG, temp_char);
+    //write_console(STYLE_LOG, temp_char);
     clock_gettime(CLOCK_MONOTONIC_RAW, &last_change_time);
     if (delta_us < atof(get_field("tuning_accel_thresh2")->value)){
       if (tuning_step < 10000){
         tuning_step = tuning_step * 100;
         //sprintf(temp_char, "x100 activated\r\n");
-        //write_console(FONT_LOG, temp_char);
+        //write_console(STYLE_LOG, temp_char);
       }
     } else if (delta_us < atof(get_field("tuning_accel_thresh1")->value)){
       if (tuning_step < 1000){
         tuning_step = tuning_step * 10;
         //printf(temp_char, "x10 activated\r\n");
-        //write_console(FONT_LOG, temp_char);
+        //write_console(STYLE_LOG, temp_char);
       }
     }
   }
@@ -1865,8 +1865,8 @@ int do_tuning(struct field *f, int event, int a, int b, int c){
 
 int do_kbd(struct field *f, int event, int a, int b, int c){
 	if (event == FIELD_DRAW){
-		//int label_height = font_table[FONT_FIELD_LABEL].height;
-		//int width = measure_text(gfx, f->label, FONT_FIELD_LABEL);
+		//int label_height = font_table[STYLE_FIELD_LABEL].height;
+		//int width = measure_text(gfx, f->label, STYLE_FIELD_LABEL);
 		//int offset_x = f->x + f->width/2 - width/2;
 		//int label_y;
 		//int value_font;
@@ -1876,16 +1876,16 @@ int do_kbd(struct field *f, int event, int a, int b, int c){
 		////is it a two line display or a single line?
 		//if (!f->value[0]){
 		//	label_y = f->y + (f->height - label_height)/2;
-		//	draw_text(gfx, offset_x,label_y, f->label, FONT_FIELD_LABEL);
+		//	draw_text(gfx, offset_x,label_y, f->label, STYLE_FIELD_LABEL);
 		//} 
 		//else {
 		//	if(width >= f->width+2)
-		//		value_font = FONT_SMALL_FIELD_VALUE;
+		//		value_font = STYLE_SMALL_FIELD_VALUE;
 		//	else
-		//		value_font = FONT_FIELD_VALUE;
+		//		value_font = STYLE_FIELD_VALUE;
 		//	int value_height = font_table[value_font].height;
 		//	label_y = f->y +3;
-		//	draw_text(gfx, f->x + 3, label_y, f->label, FONT_FIELD_LABEL);
+		//	draw_text(gfx, f->x + 3, label_y, f->label, STYLE_FIELD_LABEL);
 		//	width = measure_text(gfx, f->value, value_font);
 		//	label_y = f->y + (f->height - label_height)/2;
 		//	draw_text(gfx, f->x + f->width/2 - width/2, label_y, f->value, value_font);
@@ -1931,7 +1931,7 @@ int do_macro(struct field *f, int event, int a, int b, int c){
 		if (!strcmp(mode, "FT8") && strlen(buff)){
 			ft8_tx(buff, atoi(get_field("#tx_pitch")->value));
 			set_field("#text_in", "");
-			//write_console(FONT_LOG_TX, buff);
+			//write_console(STYLE_LOG_TX, buff);
 		}
 		else if (strlen(buff)){
 			set_field("#text_in", buff);
@@ -1947,13 +1947,13 @@ int do_macro(struct field *f, int event, int a, int b, int c){
 		//fill_rect(gfx, f->x, f->y, f->width,f->height, COLOR_BACKGROUND);
 		//rect(gfx, f->x, f->y, f->width,f->height, COLOR_CONTROL_BOX, 1);
 
-		//width = measure_text(gfx, f->label, FONT_FIELD_LABEL);
+		//width = measure_text(gfx, f->label, STYLE_FIELD_LABEL);
 		//offset = f->width/2 - width/2;
 		//if (strlen(f->value) == 0)
-		//	draw_text(gfx, f->x +5, f->y+13 , f->label , FONT_FIELD_LABEL);
+		//	draw_text(gfx, f->x +5, f->y+13 , f->label , STYLE_FIELD_LABEL);
 		//else {
 		//	if (strlen(f->label)){
-		//		draw_text(gfx, f->x+5, f->y+5 ,  f->label, FONT_FIELD_LABEL);
+		//		draw_text(gfx, f->x+5, f->y+5 ,  f->label, STYLE_FIELD_LABEL);
 		//		draw_text(gfx, f->x+5 , f->y+f->height - 20 , f->value , f->font_index);
 		//	}
 		//	else
@@ -1975,16 +1975,16 @@ int do_record(struct field *f, int event, int a, int b, int c){
 		//else 
 		//	rect(gfx, f->x, f->y, f->width,f->height, COLOR_CONTROL_BOX, 1);
 
-		//int width = measure_text(gfx, f->label, FONT_FIELD_LABEL);
+		//int width = measure_text(gfx, f->label, STYLE_FIELD_LABEL);
 		//int offset = f->width/2 - width/2;
 		//int	label_y = f->y + ((f->height 
-		//	- font_table[FONT_FIELD_LABEL].height - 5  
-		//	- font_table[FONT_FIELD_VALUE].height)/2);
-		//draw_text(gfx, f->x + offset, label_y, f->label, FONT_FIELD_LABEL);
+		//	- font_table[STYLE_FIELD_LABEL].height - 5  
+		//	- font_table[STYLE_FIELD_VALUE].height)/2);
+		//draw_text(gfx, f->x + offset, label_y, f->label, STYLE_FIELD_LABEL);
 
 
 		//char duration[12];
-		//label_y += font_table[FONT_FIELD_LABEL].height;
+		//label_y += font_table[STYLE_FIELD_LABEL].height;
 
 		//if (record_start){
 		//	width = measure_text(gfx, f->value, f->font_index);
@@ -1996,7 +1996,7 @@ int do_record(struct field *f, int event, int a, int b, int c){
 		//}
 		//else
 		//	strcpy(duration, "OFF");
-		//width = measure_text(gfx, duration, FONT_FIELD_VALUE);
+		//width = measure_text(gfx, duration, STYLE_FIELD_VALUE);
 		//draw_text(gfx, f->x + f->width/2 - width/2, label_y, duration, f->font_index);
 		return 1;
 	}
@@ -2008,7 +2008,7 @@ void tx_on(int trigger){
 	struct field *f_batt = get_field("#batt");
 	
 	if (atoi(f_batt->value) > 900 && sbitx_version == 4){
-		//write_console(FONT_LOG, "Reduce the power supply voltage to transmit\n");
+		//write_console(STYLE_LOG, "Reduce the power supply voltage to transmit\n");
 		return;
 	}
 
@@ -2624,7 +2624,7 @@ bool ui_tick(){
 		edit_field(f, MIN_KEY_DOWN);
 		tuning_ticks--;
     //sprintf(message, "tune-\r\n");
-    //write_console(FONT_LOG, message);
+    //write_console(STYLE_LOG, message);
 
 	}
 
@@ -2632,7 +2632,7 @@ bool ui_tick(){
 		edit_field(f, MIN_KEY_UP);
 		tuning_ticks++;
     //sprintf(message, "tune+\r\n");
-    //write_console(FONT_LOG, message);
+    //write_console(STYLE_LOG, message);
 	}
 
 
@@ -3012,11 +3012,11 @@ void do_control_action(char *cmd){
 		sprintf(request, "record=%s", fullpath);
 		sdr_request(request, response);
 		sprintf(request, "Recording:%s\n", fullpath);
-		write_console(FONT_LOG, request);
+		write_console(STYLE_LOG, request);
 	}
 	else if (!strcmp(request, "REC OFF")){
 		sdr_request("record", "off");
-		write_console(FONT_LOG, "Recording stopped\n");
+		write_console(STYLE_LOG, "Recording stopped\n");
 		record_start = 0;
 	}
 	else if (!strcmp(request, "QRZ") && strlen(field_str("CALL")) > 0)
@@ -3195,7 +3195,7 @@ void cmd_exec(char *cmd){
 	else if (!strcmp(exec, "callsign")){
 		strcpy(get_field("#mycallsign")->value,args); 
 		sprintf(response, "\n[Your callsign is set to %s]\n", get_field("#mycallsign")->value);
-		write_console(FONT_LOG, response);
+		write_console(STYLE_LOG, response);
 	}
 	else if (!strcmp(exec, "QSODEL")){
 		logbook_delete(atoi(args));
@@ -3220,7 +3220,7 @@ void cmd_exec(char *cmd){
 	else if (!strcmp(exec, "grid")){	
 		set_field("#mygrid", args);
 		sprintf(response, "\n[Your grid is set to %s]\n", get_field("#mygrid")->value);
-		write_console(FONT_LOG, response);
+		write_console(STYLE_LOG, response);
 	}
 	else if (!strcmp(exec, "clear")){
 		console_init();
@@ -3233,12 +3233,12 @@ void cmd_exec(char *cmd){
 			set_field("#current_macro", args);
 		}
 		else if (strlen(get_field("#current_macro")->value)){
-			write_console(FONT_LOG, "current macro is ");
-			write_console(FONT_LOG, get_field("#current_macro")->value);
-			write_console(FONT_LOG, "\n");
+			write_console(STYLE_LOG, "current macro is ");
+			write_console(STYLE_LOG, get_field("#current_macro")->value);
+			write_console(STYLE_LOG, "\n");
 		}
 		else
-			write_console(FONT_LOG, "macro file not loaded\n");
+			write_console(STYLE_LOG, "macro file not loaded\n");
 	}
 	else if (!strcmp(exec, "qso"))
 		enter_qso(args);
@@ -3251,15 +3251,15 @@ void cmd_exec(char *cmd){
 			if (atoi(args))
 				set_field("#contest_serial", args);
 		}
-		write_console(FONT_LOG, "Exchange set to [");
-		write_console(FONT_LOG, get_field("#sent_exchange")->value);
-		write_console(FONT_LOG, "]\n");
+		write_console(STYLE_LOG, "Exchange set to [");
+		write_console(STYLE_LOG, get_field("#sent_exchange")->value);
+		write_console(STYLE_LOG, "]\n");
 	}
 	else if(!strcmp(exec, "freq") || !strcmp(exec, "f") ||
 		!strcmp(exec, "FREQ")){
 		long freq = atol(args);
 		if (freq == 0){
-			write_console(FONT_LOG, "Usage: \f xxxxx (in Hz or KHz)\n");
+			write_console(STYLE_LOG, "Usage: \f xxxxx (in Hz or KHz)\n");
 		}
 		else if (freq < 30000)
 			freq *= 1000;
@@ -3293,7 +3293,7 @@ void cmd_exec(char *cmd){
 		if(strlen(args))
 			qrz(args);
 		else
-			write_console(FONT_LOG, "/qrz [callsign]\n");
+			write_console(STYLE_LOG, "/qrz [callsign]\n");
 	}
 	else if (!strcmp(exec, "mode") || !strcmp(exec, "m") || !strcmp(exec, "MODE")){
 		set_radio_mode(args);
@@ -3324,11 +3324,11 @@ void cmd_exec(char *cmd){
 			if (t > 100 && t < 4000)
 				set_field("#tx_pitch", args);
 			else
-				write_console(FONT_LOG, "cw pitch should be 100-4000");
+				write_console(STYLE_LOG, "cw pitch should be 100-4000");
 		}
 		char buff[100];
 		sprintf(buff, "txpitch is set to %d Hz\n", get_cw_tx_pitch());
-		write_console(FONT_LOG, buff);
+		write_console(STYLE_LOG, buff);
 	}
 /*	else if (!strcmp(exec, "PITCH")){
 		struct field *f = get_field_by_label(exec);
@@ -3353,7 +3353,7 @@ void cmd_exec(char *cmd){
 			for(char *p = args; *p; p++)
 				*p = toupper(*p);
 			if(set_field(f->cmd, args)) {
-				//write_console(FONT_LOG, "Invalid setting:");
+				//write_console(STYLE_LOG, "Invalid setting:");
 			} else {
 						//this is an extract from focus_field()
 						//it shifts the focus to the updated field
@@ -3474,16 +3474,16 @@ int main( int argc, char* argv[] ) {
   set_field("r1:freq", get_field("#vfo_a_freq")->value);
 
 	console_init();
-	write_console(FONT_LOG, VER_STR);
-  write_console(FONT_LOG, "\r\nEnter \\help for help\r\n");
+	write_console(STYLE_LOG, VER_STR);
+  write_console(STYLE_LOG, "\r\nEnter \\help for help\r\n");
 
 	if (strcmp(get_field("#mycallsign")->value, "NOBADY")){
 		sprintf(buff, "\nWelcome %s\nYour grid is %s\n", 
 		get_field("#mycallsign")->value, get_field("#mygrid")->value);
-		write_console(FONT_LOG, buff);
+		write_console(STYLE_LOG, buff);
 	}
 	else 
-		write_console(FONT_LOG, "Set your callsign with '\\callsign [yourcallsign]'\n"
+		write_console(STYLE_LOG, "Set your callsign with '\\callsign [yourcallsign]'\n"
 		"Set your 6 letter grid with '\\grid [yourgrid]\n");
 
 	set_field("#text_in", "");
