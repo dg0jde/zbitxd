@@ -2,6 +2,7 @@
 The initial sync between the gui values, the core radio values, settings, et al are manually set.
 */
 
+#include <assert.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -139,19 +140,16 @@ struct field *f_pitch = NULL;
 #define FIELD_STATIC 5
 #define FIELD_CONSOLE 6
 
-// The console is a series of lines
+// The console is a series of lines (the only text list so far)
+// console_stream is used as a ring buffer (TODO fix bugs to make it true)
 #define MAX_CONSOLE_BUFFER 10000
 #define MAX_LINE_LENGTH 128
 #define MAX_CONSOLE_LINES 500
 static int 	console_cols = 50;
-
-//we use just one text list in our user interface
-
 struct console_line {
 	char text[MAX_LINE_LENGTH];
-	int style;
+	text_span_semantic spans[MAX_CONSOLE_LINE_STYLES];
 };
-static int console_style = STYLE_LOG;
 static struct console_line console_stream[MAX_CONSOLE_LINES];
 int console_current_line = 0;
 struct Queue q_web;
@@ -798,17 +796,13 @@ int remote_update_field(int i, char *text){
 }
 
 
-// log is a special field that essentially is a like text
-// on a terminal
-
+// console is a list view, resembling a terminal with styled text
 void console_init(){
-	for (int i =0;  i < MAX_CONSOLE_LINES; i++){
-		console_stream[i].text[0] = 0;
-		console_stream[i].style = console_style;
-	}
+	memset(console_stream, 0, sizeof(console_stream));
 	struct field *f = get_field("#console");
+	assert(f);
+	f->is_dirty = TRUE;
 	console_current_line = 0;
-	f->is_dirty = 1;
 }
 
 void web_add_string(char *string){
@@ -904,85 +898,80 @@ int console_init_next_line(){
 	console_current_line++;
 	if (console_current_line == MAX_CONSOLE_LINES)
 		console_current_line = 0;
-	console_stream[console_current_line].text[0] = 0;	
-	console_stream[console_current_line].style = console_style;
+	memset(&console_stream[console_current_line], 0, sizeof(struct console_line));
 	return console_current_line;
 }
 
-void write_to_remote_app(int style, char *text){
+void write_to_remote_app(int style, const char *text){
 	remote_write("{");
 	remote_write(text);
 	remote_write("}");
 }
 
-void write_console(int style, char *raw_text){
-	char *text;
+// append a console line with only one style
+void write_console(sbitx_style style, const char *text)
+{
+    text_span_semantic sem;
+    memset(&sem, 0, sizeof(sem));
+    sem.length = strlen(text);
+    sem.semantic = style;
+    write_console_semantic(text, &sem, 1);
+}
+
+// append a console line with \a sem_count styled spans
+void write_console_semantic(const char *text, const text_span_semantic *sem, int sem_count)
+{
+    if (!text || text[0] == 0)
+	return;
+
+    // TODO get rid of this: maybe come up with a way to send the `sem` array separately
+    // to the web and remote UIs too; otherwise use `sem` to "decorate" with a better markup
+    {
 	char decorated[1000];
-	
-	if (strlen(raw_text) == 0)
-		return;
+	assert(sem);
+	hd_decorate(sem[0].semantic, text, decorated);
+	web_write(sem[0].semantic, decorated);
+	write_to_remote_app(sem[0].semantic, text);
+    }
 
-	hd_decorate(style, raw_text, decorated);
-	text = decorated;
-	web_write(style, text);
-	zbitx_write(style, text);
-
-	//move to a new line if the style has changed
-	if (style != console_style){
-		q_write(&q_web, '{');
-		q_write(&q_web, style + 'A');
-		console_style = style;
-		if (strlen(console_stream[console_current_line].text)> 0)
-			console_init_next_line();	
-		console_stream[console_current_line].style = style;
-		switch(style){
-			case STYLE_FT8_RX:
-		case STYLE_FLDIGI_RX:
-			case STYLE_CW_RX:
-				break;
-			case STYLE_FT8_TX:
-			case STYLE_FLDIGI_TX:
-			case STYLE_CW_TX:
-			case STYLE_FT8_REPLY:
-				break;
-			default:
-				break;
-		}
+    const char *next_char = text;
+    char *console_line_string = console_stream[console_current_line].text;
+    text_span_semantic *console_line_spans = console_stream[console_current_line].spans;
+    int output_span_i = 0;
+    int col = 0;
+    const text_span_semantic *next_sem = sem;
+    while (*next_char)
+    {
+	int text_i = next_char - text;
+	if (next_sem < sem + sem_count && next_sem->start_column == text_i) {
+	    text_span_semantic *out_sem = &console_line_spans[output_span_i];
+	    *out_sem = *next_sem; // copy whole struct
+	    out_sem->start_row = console_current_line; // only useful for output to spans file, and should increment forever (TODO)
+	    //~ printf("write '%s': span %d col %d len %d: style %d\n",
+		//~ text, output_span_i, out_sem->start_column, out_sem->length, out_sem->semantic); // debug
+	    ++output_span_i;
+	    ++next_sem;
 	}
-
-	write_to_remote_app(style, raw_text);
-
-	int console_line_max = console_cols;
-	while(*text){
-		char c = *text;
-		if (c == '\n')
-			console_init_next_line();
-		else if (c < 128 && c >= ' '){
-			char *p = console_stream[console_current_line].text;
-			int len = strlen(p);
-			if (c == HD_MARKUP_CHAR) {
-				console_line_max +=2;  // markup does not count
-				if (console_line_max > MAX_LINE_LENGTH-2) {
-					len = console_line_max; // force a new Line
-				}
-			}
-			if(len >= console_line_max - 1) {
-				//start a fresh line
-				console_init_next_line();
-				p = console_stream[console_current_line].text;
-				len = 0;
-			}
-		
-			//printf("Adding %c to %d\n", (int)c, console_current_line);	
-			p[len++] = c & 0x7f;
-			p[len] = 0;
-		}
-		text++;	
+	char c = *next_char;
+	if (c == '\n' || col >= console_cols) {
+	    console_line_string[col] = 0;
+	    console_line_spans[output_span_i].length = col;
+	    console_init_next_line();
+	    console_line_string = console_stream[console_current_line].text;
+	    console_line_spans = console_stream[console_current_line].spans;
+	    col = 0;
+	    output_span_i = 0;
 	}
+	else if (c < 128 && c >= ' ') // TODO support UTF-8 (otherwise isgraph() might work)
+	{
+	    console_line_string[col++] = c & 0x7f;
+	}
+	++next_char;
+    }
 
-	struct field *f = get_field("#console");
-	if (f)
-		f->is_dirty = 1;
+    struct field *f = get_field("#console");
+    if (f)
+	f->is_dirty = 1;
 }
 
 int do_console(struct field *f, int event, int a, int b, int c){

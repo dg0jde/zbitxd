@@ -48,11 +48,11 @@ struct hd_message_struct {
 	char m1[32], m2[32], m3[32], m4[32];
 };
 
-int hd_next_token(char* src, int start, char* tok, int tok_max, char * sep) {
+int hd_next_token(const char* src, int start, char* tok, int tok_max, char * sep) {
 	tok[0] = 0;
 	if (src == NULL || src[start] == 0) 
 		return -1;
-	char * p_sep;
+	const char * p_sep;
 	int n, p;
 	int len = strlen(src);
 	if (len > 0 && src[len-1] == '\n') {
@@ -73,7 +73,7 @@ int hd_next_token(char* src, int start, char* tok, int tok_max, char * sep) {
 	return p + n + strlen(sep);
 }
 
-int hd_message_parse(struct hd_message_struct* p_message, char* raw_message) {
+int hd_message_parse(struct hd_message_struct* p_message, const char* raw_message) {
 	int r = hd_next_token(raw_message, 0, p_message->signal_info, 32, "~ ");
 	if (r < 0 ) return r;
 	r = hd_next_token(raw_message, r, p_message->m1, 32, " ");
@@ -169,8 +169,7 @@ void hd_strip_decoration(char * ft8_message, char * decorated) {
 	*ft8_message = 0;
 }
 
-int hd_decorate(int style, char * message, char * decorated) {
-	
+int hd_decorate(int style, const char * message, char * decorated) {
 	switch (style) {
 	case STYLE_FT8_RX:
 	case STYLE_FT8_TX:

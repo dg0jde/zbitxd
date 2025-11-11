@@ -59,7 +59,7 @@ void remote_init() {
     remote_send("\r\n");
 }
 
-void remote_write(char *message) {
+void remote_write(const char *message) {
     if (data_socket < 0)
         return;
 
