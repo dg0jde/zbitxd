@@ -3458,19 +3458,26 @@ int main( int argc, char* argv[] ) {
 	if (strlen(get_field("#current_macro")->value))
 		macro_load(get_field("#current_macro")->value, NULL);
 
-	char buff[1000];
-
 	//now set the frequency of operation and more to vfo_a
   set_field("r1:freq", get_field("#vfo_a_freq")->value);
 
-	console_init();
-	write_console(STYLE_LOG, VER_STR);
-  write_console(STYLE_LOG, "\r\nEnter \\help for help\r\n");
+	char buf[64];
+	snprintf(buf, sizeof(buf), "\n%s\n", VER_STR);
+	write_console(STYLE_LOG, buf);
+	write_console(STYLE_LOG, "For help: https://github.com/dg0jde/zbitxd/wiki\n\n");
 
 	if (strcmp(get_field("#mycallsign")->value, "NOBADY")){
-		sprintf(buff, "\nWelcome %s\nYour grid is %s\n", 
-		get_field("#mycallsign")->value, get_field("#mygrid")->value);
-		write_console(STYLE_LOG, buff);
+		char *mycall = get_field("#mycallsign")->value;
+		char *mygrid = get_field("#mygrid")->value;
+		snprintf(buf, sizeof(buf), "Welcome %s your grid is %s\n", mycall, mygrid);
+		text_span_semantic sems[2];
+		sems[0].start_column = 8;
+		sems[0].length = strlen(mycall);
+		sems[0].semantic = STYLE_MYCALL;
+		sems[1].start_column = 8 + strlen(mycall) + 14;
+		sems[1].length = strlen(mygrid);
+		sems[1].semantic = STYLE_GRID;
+		write_console_semantic(buf, sems, 2);
 	}
 	else 
 		write_console(STYLE_LOG, "Set your callsign with '\\callsign [yourcallsign]'\n"
