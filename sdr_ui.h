@@ -1,25 +1,13 @@
+#ifndef SDR_UI_H
+#define SDR_UI_H
+
 #include <stdint.h>
 
-void setup();
-void loop();
-void display();
-void redraw();
-void key_pressed(char c);
-int field_set(const char *label, const char *new_value);
-int get_field_value(char *id, char *value);
-int get_field_value_by_label(char *label, char *value);
-extern int spectrum_plot[];
-void remote_execute(char *command);
-int remote_update_field(int i, char *text);
-void web_get_spectrum(char *buff);
-int web_get_console(char *buff, int max);
-int remote_audio_output(int16_t *samples);
-const char *field_str(char *label);
-int field_int(char *label);
-int is_in_tx();
-void abort_tx();
-void enter_qso();
+// maximum sem_count in write_console_semantic()
+#define MAX_CONSOLE_LINE_STYLES 8
+
 extern int display_freq;
+extern int spectrum_plot[];
 
 // A mixed bag of named styles used in various places in various UIs.
 // TODO maybe separate the ones that mean something from those that are mere GTK-UI-specific styles
@@ -80,34 +68,37 @@ typedef struct {
     uint8_t semantic : 8; // used directly as style in this UI
 } text_span_semantic;
 
-// maximum sem_count in write_console_semantic()
-#define MAX_CONSOLE_LINE_STYLES 8
-
-void enter_qso();
-void call_wipe();
+void setup();
+void loop();
+void display();
+void redraw();
+void key_pressed(char c);
+int field_set(const char *label, const char *new_value);
+int get_field_value(char *id, char *value);
+int get_field_value_by_label(char *label, char *value);
+const char *field_str(const char *label);
+int field_int(char *label);
 void write_console(sbitx_style style, const char *text);
 // write plain text, with semantically-tagged spans that imply styling
 void write_console_semantic(const char *text, const text_span_semantic *sem, int sem_count);
+int web_get_console(char *buff, int max);
+int is_in_tx();
+void abort_tx();
+void remote_execute(char *command);
+int remote_update_field(int i, char *text);
+void web_get_spectrum(char *buff);
+void save_user_settings(int forced);
+int remote_audio_output(int16_t *samples);
+void enter_qso();
+void call_wipe();
+void update_log_ed();
+void write_call_log();
 int macro_load(char *filename, char *output);
 int macro_exec(int key, char *dest);
 void macro_label(int fn_key, char *label);
 void macro_list(char *output);
 void macro_get_keys(char *output);
-void update_log_ed();
-void write_call_log();
 
-void tlog(char * id, char * text, int p);
-//void tlogf(char * format, ...);
-
-// 006 : Click fix by Beckman
-// 007 : FT8 webui fix and coloring
-// 008 : Callsign lookup, and grid visited coloring
-// 009 : FT8 EXCH field safeguard
-// 010 : FT8 callsign and grid decoration
-// 011 : FT8 CQ click error fixed
-// 012 : FT8 click non CQ fixed
-// 013 : FT8 web_q overflow fixed
-// 014 : Web GridMap v1, and cur selected Band/Store shown
-// 015 : Web Robinson zoom GridMap, mouseover grid info, Logged Seen btn
-// 016 : Cleanout and prepare for github sbitx-oz7bx v3.02.0016
 #include "version.h"
+
+#endif // SDR_UI_H
