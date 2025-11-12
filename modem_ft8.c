@@ -481,6 +481,15 @@ static void monitor_reset(monitor_t* me)
     me->max_mag = 0;
 }
 
+static int message_callsign_count(const ftx_message_offsets_t *spans)
+{
+    int ret = 0;
+    for (int i = 0; i < FTX_MAX_MESSAGE_FIELDS; ++i)
+	if (spans->types[i] == FTX_FIELD_CALL)
+	    ++ret;
+    return ret;
+}
+
 static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
 {
     int sample_rate = 12000;
@@ -601,6 +610,8 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
 	    text_span_semantic sem[FTX_MAX_MESSAGE_FIELDS + 1];
 	    memset(sem, 0, sizeof(sem));
 	    bool my_call_found = false;
+	    int calls_found = 0;
+	    int total_calls = message_callsign_count(&spans);
 	    int span_i = 0;
 	    int sem_i = 0;
 	    sem[sem_i].length = prefix_len;
@@ -619,11 +630,21 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
 		    if (!call_end)
 			call_end = call + strlen(call);
 		    assert(call_end);
+		    //~ printf("considering call %d of %d: first part of %s\n", calls_found, total_calls, call);
 		    if (!strncmp(call, mycallsign_upper, call_end - call)) {
 			sem[sem_i].semantic = STYLE_MYCALL;
 			my_call_found = true;
-			continue; // with the for loop, so as to skip the next line below
+		    } else if (!calls_found && total_calls > 1) {
+			// the first callsign is the callee, unless it's a single-call message (such as CQ):
+			// less interesting then, unless it's my call
+			sem[sem_i].semantic = STYLE_CALLEE;
+		    } else {
+			// otherwise the callsign is presumably the caller
+			// (since we don't support multi-part messages yet)
+			sem[sem_i].semantic = STYLE_CALLER;
 		    }
+		    ++calls_found;
+		    continue; // with the for loop, so as to skip the next line below
 		}
 		sem[sem_i].semantic = kFieldType_style_map[spans.types[span_i]];
             }

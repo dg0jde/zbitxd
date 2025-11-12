@@ -43,6 +43,7 @@ typedef enum {
     STYLE_FT8_REPLY,
     STYLE_MYCALL,
     STYLE_CALLER,
+    STYLE_CALLEE,
     STYLE_GRID,
     STYLE_BLACK
 }  sbitx_style;
