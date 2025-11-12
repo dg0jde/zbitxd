@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -54,6 +55,17 @@ static const int kMax_decoded_messages = 50;
 
 static const int kFreq_osr = 2; // Frequency oversampling rate (bin subdivision)
 static const int kTime_osr = 2; // Time oversampling rate (symbol subdivision)
+
+// styles to use for each enum value in ftx_field_t
+static const int kFieldType_style_map[] = {
+    STYLE_LOG,		// FTX_FIELD_UNKNOWN
+    STYLE_LOG,		// FTX_FIELD_NONE
+    STYLE_FT8_RX,	// FTX_FIELD_TOKEN
+    STYLE_FT8_RX,	// FTX_FIELD_TOKEN_WITH_ARG
+    STYLE_CALLER,	// FTX_FIELD_CALL
+    STYLE_GRID,		// FTX_FIELD_GRID
+    STYLE_LOG		// FTX_FIELD_RST
+};
 
 #define LOG_LEVEL LOG_INFO
 
@@ -581,17 +593,47 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
            if (unpack_status != FTX_MESSAGE_RC_OK)
               LOG(LOG_DEBUG, "Error [%d] while unpacking!", (int)unpack_status);
 
-           char buff[1000];
-
-           sprintf(buff, "%s %3d %+03d %-4.0f ~  %s\n", time_str, cand->score, cand->snr, freq_hz, text);
+           char buf[128];
+           int prefix_len = snprintf(buf, sizeof(buf), "%s %3d %+03d %-4.0f ~ ", time_str, cand->score, cand->snr, freq_hz); // TODO add span for that
+           snprintf(buf + prefix_len, sizeof(buf) - prefix_len, "%s\n", text);
            LOG(LOG_DEBUG, "-> %s\n", buff);
-					if (strstr(buff, mycallsign_upper)){
-						write_console(STYLE_FT8_REPLY, buff);
-						ft8_process(buff, FT8_CONTINUE_QSO);
-					}
-					else
-						write_console(STYLE_FT8_RX, buff);
-				n_decodes++;
+
+	    text_span_semantic sem[FTX_MAX_MESSAGE_FIELDS + 1];
+	    memset(sem, 0, sizeof(sem));
+	    bool my_call_found = false;
+	    int span_i = 0;
+	    int sem_i = 0;
+	    sem[sem_i].length = prefix_len;
+	    sem[sem_i++].semantic = STYLE_FT8_RX;
+	    for (; span_i < FTX_MAX_MESSAGE_FIELDS && spans.offsets[span_i] >= 0; ++span_i, ++sem_i) {
+		sem[sem_i].start_column = prefix_len + spans.offsets[span_i];
+		// each span ends where the next starts (ftx_message_offsets_t does not have lengths, so far)
+		if (sem_i > 1) {
+		    sem[sem_i - 1].length = sem[sem_i].start_column - sem[sem_i - 1].start_column;
+		    //~ printf("length of span %d: %d - %d = %d\n", sem_i - 1, sem[sem_i].start_column, sem[sem_i - 1].start_column, sem[sem_i - 1].length);
+		}
+		if (spans.types[span_i] == FTX_FIELD_CALL) {
+		    // detect whether it's my callsign or the caller's
+		    char *call = text + spans.offsets[span_i];
+		    char *call_end = strchr(call, ' ');
+		    if (!call_end)
+			call_end = call + strlen(call);
+		    assert(call_end);
+		    if (!strncmp(call, mycallsign_upper, call_end - call)) {
+			sem[sem_i].semantic = STYLE_MYCALL;
+			my_call_found = true;
+			continue; // with the for loop, so as to skip the next line below
+		    }
+		}
+		sem[sem_i].semantic = kFieldType_style_map[spans.types[span_i]];
+            }
+            // set length of the last span (no next span, but null terminator in text)
+            if (span_i > 0)
+                sem[sem_i - 1].length = strlen(text + spans.offsets[span_i - 1]);
+            write_console_semantic(buf, sem, sem_i);
+            if (my_call_found)
+                ft8_process(buf, FT8_CONTINUE_QSO);
+            n_decodes++;
       }
     }
     //LOG(LOG_INFO, "Decoded %d messages\n", num_decoded);
