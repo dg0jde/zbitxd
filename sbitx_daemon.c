@@ -932,6 +932,7 @@ void write_console_semantic(const char *text, const text_span_semantic *sem, int
 	hd_decorate(sem[0].semantic, text, decorated);
 	web_write(sem[0].semantic, decorated);
 	write_to_remote_app(sem[0].semantic, text);
+	zbitx_write(sem[0].semantic, decorated);
     }
 
     const char *next_char = text;
