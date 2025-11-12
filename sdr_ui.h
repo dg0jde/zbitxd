@@ -25,26 +25,31 @@ extern int display_freq;
 // TODO maybe separate the ones that mean something from those that are mere GTK-UI-specific styles
 // e.g. MYCALL and GRID are what I'd prefer to call semantics, rather than styles
 typedef enum {
-    STYLE_LOG = 0, // because we use memset to initalize the console
-    STYLE_FIELD_LABEL,
-    STYLE_FIELD_VALUE,
-    STYLE_LARGE_FIELD,
-    STYLE_LARGE_VALUE,
-    STYLE_SMALL,
+    // semantic styles (only for the console so far):
+    // STYLE_LOG must come first, because it's 0, the default,
+    // and we use memset to initalize the console
+    STYLE_LOG = 0,
+    STYLE_MYCALL,
+    STYLE_CALLER,
+    STYLE_CALLEE,
+    STYLE_GRID,
+    // mode-specific semantics
     STYLE_FT8_RX,
     STYLE_FT8_TX,
-    STYLE_SMALL_FIELD_VALUE,
+    STYLE_FT8_QUEUED,
+    STYLE_FT8_REPLY,
     STYLE_CW_RX,
     STYLE_CW_TX,
     STYLE_FLDIGI_RX,
     STYLE_FLDIGI_TX,
     STYLE_TELNET,
-    STYLE_FT8_QUEUED,
-    STYLE_FT8_REPLY,
-    STYLE_MYCALL,
-    STYLE_CALLER,
-    STYLE_CALLEE,
-    STYLE_GRID,
+    // non-semantic styles, for other fields and UI elements
+    STYLE_FIELD_LABEL,
+    STYLE_FIELD_VALUE,
+    STYLE_LARGE_FIELD,
+    STYLE_LARGE_VALUE,
+    STYLE_SMALL,
+    STYLE_SMALL_FIELD_VALUE,
     STYLE_BLACK
 }  sbitx_style;
 
