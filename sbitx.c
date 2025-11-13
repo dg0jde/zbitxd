@@ -599,8 +599,6 @@ void my_fftw_execute(fftw_plan f){
 	fftw_execute(f);
 }
 
-static int32_t rx_am_avg = 0;
-
 static int rx_tick = 0;
 static char bufDebugTick[200];
 
