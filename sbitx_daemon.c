@@ -721,7 +721,7 @@ struct field *get_field_by_label(const char *label){
 	return NULL;
 }
 
-const char *field_str(char *label){
+const char *field_str(const char *label){
 	struct field *f = get_field_by_label(label);
 	if (f)
 		return f->value;
@@ -748,7 +748,7 @@ int field_set(const char *label, const char *new_value){
 	update_field(f);
 }
 
-int get_field_value(char *cmd, char *value){
+int get_field_value(const char *cmd, char *value){
 	struct field *f = get_field(cmd);
 	if (!f)
 		return -1;
@@ -756,7 +756,7 @@ int get_field_value(char *cmd, char *value){
 	return 0;
 }
 
-int get_field_value_by_label(char *label, char *value){
+int get_field_value_by_label(const char *label, char *value){
 	struct field *f = get_field_by_label(label);
 	if (!f)
 		return -1;
@@ -1064,7 +1064,7 @@ static char *mode_name(int mode_id, char *name){
 	}
 }
 
-static void save_user_settings(int forced){
+void save_user_settings(int forced){
 	static int last_save_at = 0;
 	char const *file_path = STATEDIR "/user_settings.ini";
 
@@ -1510,7 +1510,7 @@ int do_waterfall(struct field *f, int event, int a, int b, int c){
 	return 0;	
 }
 
-void remote_execute(char *cmd){
+void remote_execute(const char *cmd){
 	if (q_remote_commands.overflow)
 		q_empty(&q_remote_commands);
 	while (*cmd)
