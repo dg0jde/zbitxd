@@ -904,6 +904,14 @@ int ft8_message_tokenize(char *message){
 	return 0;
 }
 
+void set_call_field(const char *s) {
+	if (strcmp(s, "<...>") == 0)
+		return;
+	char call[16];
+	strncpy(call, s, sizeof(call));
+	field_set("CALL", trim_brackets(call));
+}
+
 // this kicks stars a new qso either as a CQ message or
 // as a reply to someone's cq or as a 'break' with signal report to
 // a concluding qso
@@ -923,18 +931,18 @@ void ft8_on_start_qso(char *message){
 		ft8_tx1st = 1;
 
     if (!strcmp(m2, mycall)){ // own transmission clicked - restart qso
-		field_set("CALL", m1);
+		set_call_field(m1);
 		call = m1;
 		sprintf(reply_message, "%s %s %s", call, mycall, mygrid); //
 	}
 	else if (!strcmp(m1, "CQ")){
 		if (m4[0]){
-			field_set("CALL", m3);
+			set_call_field(m3);
 			field_set("EXCH", m4);
 			field_set("SENT", signal_strength);
 		}
 		else {
-			field_set("CALL", m2);
+			set_call_field(m2);
 			field_set("EXCH", m3);
 			field_set("SENT", signal_strength);
 		}
@@ -944,7 +952,7 @@ void ft8_on_start_qso(char *message){
 	else if (!strcmp(m1, mycall)){
 		char cur_call[20];
 	    get_field_value_by_label("CALL", cur_call);
-		field_set("CALL", m2);
+		set_call_field(m2);
 		field_set("SENT", signal_strength);
 		//they might have directly sent us a signal report
 		if (isalpha(m3[0]) && isalpha(m3[1]) && strncmp(m3,"RR",2)!=0){ // R- RR are not EXCH
@@ -960,7 +968,7 @@ void ft8_on_start_qso(char *message){
 		}
 	}
 	else { //we are breaking into someone else's qso
-		field_set("CALL", m2);
+		set_call_field(m2);
 		if (isalpha(m3[0]) && isalpha(m3[1]) && strncmp(m3,"RR",2)!=0){ // R- RR are not EXCH
 			field_set("EXCH", m3); // the gridId is valid - use it
 		} else {
@@ -974,7 +982,7 @@ void ft8_on_start_qso(char *message){
 }
 
 void ft8_on_signal_report(){
-	field_set("CALL", m2);
+	set_call_field(m2);
 	if (m3[0] == 'R'){
 		//skip the 'R'
 		field_set("RECV", m3+1);
