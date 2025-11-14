@@ -112,7 +112,7 @@ void tuning_isr(void);
 // the struct field indexes into this table
 struct font_style {
 	int index;
-	double r, g, b;
+	float r, g, b;
 	char name[32];
 	int height;
 	int weight;
@@ -951,7 +951,7 @@ void write_console_semantic(const char *text, const text_span_semantic *sem, int
     while (*next_char)
     {
 	int text_i = next_char - text;
-	if (next_sem < sem + sem_count && next_sem->start_column == text_i) {
+	while (next_sem < sem + sem_count && next_sem->start_column == text_i) {
 	    text_span_semantic *out_sem = &console_line_spans[output_span_i];
 	    *out_sem = *next_sem; // copy whole struct
 	    out_sem->start_row = console_current_line; // only useful for output to spans file, and should increment forever (TODO)

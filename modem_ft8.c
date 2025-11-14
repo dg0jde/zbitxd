@@ -513,6 +513,7 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
 		char time_str[20], response[100];
 		struct tm *t = gmtime(&rawtime);
 		sprintf(time_str, "%02d%02d%02d", t->tm_hour, t->tm_min, t->tm_sec);
+		const int time_str_len = strlen(time_str);
 
 		int i;
 		char mycallsign_upper[20];
@@ -603,23 +604,35 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
               LOG(LOG_DEBUG, "Error [%d] while unpacking!", (int)unpack_status);
 
            char buf[128];
-           int prefix_len = snprintf(buf, sizeof(buf), "%s %3d %+03d %-4.0f ~ ", time_str, cand->score, cand->snr, freq_hz); // TODO add span for that
-           snprintf(buf + prefix_len, sizeof(buf) - prefix_len, "%s\n", text);
+           int prefix_len = snprintf(buf, sizeof(buf), "%s %3d %+03d %-4.0f ~ ", time_str, cand->score, cand->snr, freq_hz);
+           int line_len = prefix_len + snprintf(buf + prefix_len, sizeof(buf) - prefix_len, "%s\n", text);
            LOG(LOG_DEBUG, "-> %s\n", buff);
 
-	    text_span_semantic sem[FTX_MAX_MESSAGE_FIELDS + 1];
+	    text_span_semantic sem[FTX_MAX_MESSAGE_FIELDS + 4];
 	    memset(sem, 0, sizeof(sem));
 	    bool my_call_found = false;
 	    int calls_found = 0;
 	    int total_calls = message_callsign_count(&spans);
 	    int span_i = 0;
 	    int sem_i = 0;
-	    sem[sem_i].length = prefix_len;
+	    int col = 0;
+	    sem[sem_i].length = line_len;
 	    sem[sem_i++].semantic = STYLE_FT8_RX;
-	    for (; span_i < FTX_MAX_MESSAGE_FIELDS && spans.offsets[span_i] >= 0; ++span_i, ++sem_i) {
+	    sem[sem_i].length = time_str_len; // 6
+	    sem[sem_i++].semantic = STYLE_TIME;
+	    col = time_str_len + 5; // skip "score"
+	    sem[sem_i].start_column = col;
+	    sem[sem_i].length = 3;
+	    sem[sem_i++].semantic = STYLE_SNR;
+	    col += 4;
+	    sem[sem_i].start_column = col;
+	    sem[sem_i].length = 4;
+	    sem[sem_i++].semantic = STYLE_FREQ;
+	    for (; span_i < FTX_MAX_MESSAGE_FIELDS && sem_i < MAX_CONSOLE_LINE_STYLES &&
+		spans.offsets[span_i] >= 0; ++span_i, ++sem_i) {
 		sem[sem_i].start_column = prefix_len + spans.offsets[span_i];
 		// each span ends where the next starts (ftx_message_offsets_t does not have lengths, so far)
-		if (sem_i > 1) {
+		if (sem_i > 4) {
 		    sem[sem_i - 1].length = sem[sem_i].start_column - sem[sem_i - 1].start_column;
 		    //~ printf("length of span %d: %d - %d = %d\n", sem_i - 1, sem[sem_i].start_column, sem[sem_i - 1].start_column, sem[sem_i - 1].length);
 		}

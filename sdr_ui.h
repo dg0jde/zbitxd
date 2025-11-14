@@ -21,6 +21,9 @@ typedef enum {
     STYLE_CALLER,
     STYLE_CALLEE,
     STYLE_GRID,
+    STYLE_TIME,
+    STYLE_SNR,
+    STYLE_FREQ,
     // mode-specific semantics
     STYLE_FT8_RX,
     STYLE_FT8_TX,
