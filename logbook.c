@@ -268,8 +268,8 @@ void logbook_open(){
 
 void message_add(char *mode, unsigned int frequency, int outgoing, char *message){
 	char date_str[10], time_str[10], freq_str[12], statement[1000], *err_msg;
+	static int err_output = 1;
 
-	
 	/* get the frequency */
 	get_field_value("r1:freq", freq_str);
 	frequency = frequency + atoi(freq_str);
@@ -291,9 +291,13 @@ void message_add(char *mode, unsigned int frequency, int outgoing, char *message
 		logbook_open();
 
 	int res = sqlite3_exec(db, statement, 0,0, &err_msg);
-	if (res != 0) {
-		printf("logbook_add db: %d err=%s", res, err_msg);
+	if (res != 0 && err_output) {
+		printf("message_add: db err %d %s\n", res, err_msg);
 		if (err_msg) sqlite3_free(err_msg);
+		// only complain once, if the error is "no such table"
+		// (it's quite alright to delete this table to avoid constant writing to the SSD)
+		if (res == 1)
+			err_output = 0;
 	}
 }
 
