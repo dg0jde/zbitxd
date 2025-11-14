@@ -159,7 +159,6 @@ int update_logs = 0;
 #define ZBITX_I2C_ADDRESS 0xa
 void zbitx_init();
 void zbitx_poll(int all);
-void zbitx_pipe(int style, char *text);
 void zbitx_get_spectrum(char *buff);
 void zbitx_write(int style, char *text);
 
