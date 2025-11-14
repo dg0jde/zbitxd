@@ -207,6 +207,33 @@ char *ff_cs(char * markup, int style) {
     return markup;
 }
 
+// convert from semantic style to old numeric line style font (as used on zbitx i2c display)
+int old_style_font(int style) {
+    switch (style) {
+    case STYLE_FT8_RX:
+	return 6; // FONT_FT8_RX
+    case STYLE_FT8_TX:
+	return 7; // FONT_FT8_TX
+    case STYLE_FT8_QUEUED:
+	return 14; // FONT_FT8_QUEUED
+    case STYLE_FT8_REPLY:
+	return 15; // FONT_FT8_REPLY
+    case STYLE_CW_RX:
+	return 9; // FONT_CW_RX
+    case STYLE_CW_TX:
+	return 10; // FONT_CW_TX
+    case STYLE_FLDIGI_RX:
+	return 11; // FONT_FLDIGI_RX
+    case STYLE_FLDIGI_TX:
+	return 12; // FONT_FLDIGI_TX
+    case STYLE_TELNET:
+	return 13; // FONT_TELNET
+    // The rest of the FONT_ defines are not meant for the console, so we don't need them
+    default: // or STYLE_LOG
+	return 5; // FONT_LOG
+    }
+}
+
 char* ff_style(char* decorated, struct hd_message_struct *pms, int style_default, int style1, int style2, int style3, int style4) {
 	char markup[3];
 	*decorated = 0;
