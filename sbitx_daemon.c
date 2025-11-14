@@ -2476,7 +2476,7 @@ void zbitx_poll(int all){
 
 	for (int i = 0; active_layout[i].cmd[0] > 0; i++){
 		struct field *f = active_layout+i;
-		if (!strcmp(f->label, "WATERFALL") || !strcmp(f->label, "SPECTRUM"))
+		if (!strcmp(f->label, "WATERFALL") || !strcmp(f->label, "SPECTRUM") || !strcmp(f->label, "CONSOLE"))
 			continue;
 		if (all || f->updated_at >  last_update){
 			sprintf(buff, "%s %s}", f->label, f->value);
