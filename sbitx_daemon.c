@@ -907,7 +907,11 @@ void write_to_remote_app(int style, const char *text){
 	remote_write("}");
 }
 
-// append a console line with only one style
+/*!
+    Write \a text to the console with one \a style as the semantic for the whole string.
+    \a text should end with a newline if it's meant to be a whole console line;
+    otherwise it gets appended to the last line, until the last line gets too long.
+*/
 void write_console(sbitx_style style, const char *text)
 {
     text_span_semantic sem;
@@ -917,7 +921,11 @@ void write_console(sbitx_style style, const char *text)
     write_console_semantic(text, &sem, 1);
 }
 
-// append a console line with \a sem_count styled spans
+/*!
+    Append \a text with \a sem_count styled spans to the console.
+    \a text should end with a newline if it's meant to be a whole console line;
+    otherwise it gets appended to the last line, until the last line gets too long.
+*/
 void write_console_semantic(const char *text, const text_span_semantic *sem, int sem_count)
 {
     if (!text || text[0] == 0)
@@ -938,7 +946,7 @@ void write_console_semantic(const char *text, const text_span_semantic *sem, int
     char *console_line_string = console_stream[console_current_line].text;
     text_span_semantic *console_line_spans = console_stream[console_current_line].spans;
     int output_span_i = 0;
-    int col = 0;
+    int col = console_line_spans[0].length;
     const text_span_semantic *next_sem = sem;
     while (*next_char)
     {
@@ -954,6 +962,7 @@ void write_console_semantic(const char *text, const text_span_semantic *sem, int
 	}
 	char c = *next_char;
 	if (c == '\n' || col >= console_cols) {
+	    console_line_spans[0].length = col;
 	    console_line_string[col] = 0;
 	    console_line_spans[output_span_i].length = col;
 	    console_init_next_line();
@@ -968,6 +977,7 @@ void write_console_semantic(const char *text, const text_span_semantic *sem, int
 	}
 	++next_char;
     }
+    console_line_spans[0].length = col;
 
     struct field *f = get_field("#console");
     if (f)
