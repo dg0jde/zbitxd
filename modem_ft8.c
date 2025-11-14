@@ -17,6 +17,9 @@
 #include "modem_ft8.h"
 #include "logbook.h"
 
+// override ft8_lib's log level by defining this before the includes
+#define LOG_LEVEL LOG_INFO
+
 #include "ft8_lib/common/common.h"
 #include "ft8_lib/common/wave.h"
 #include "ft8_lib/ft8/debug.h"
@@ -66,8 +69,6 @@ static const int kFieldType_style_map[] = {
     STYLE_GRID,		// FTX_FIELD_GRID
     STYLE_LOG		// FTX_FIELD_RST
 };
-
-#define LOG_LEVEL LOG_INFO
 
 #define FT8_SYMBOL_BT 2.0f ///< symbol smoothing filter bandwidth factor (BT)
 #define FT4_SYMBOL_BT 1.0f ///< symbol smoothing filter bandwidth factor (BT)
@@ -606,7 +607,7 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
            char buf[64];
            int prefix_len = snprintf(buf, sizeof(buf), "%s %3d %+03d %4d ~ ", time_str, cand->score, cand->snr, freq_hz);
            int line_len = prefix_len + snprintf(buf + prefix_len, sizeof(buf) - prefix_len, "%s\n", text);
-           LOG(LOG_DEBUG, "-> %s\n", buff);
+           LOG(LOG_DEBUG, "-> %s\n", buf);
 
 	    text_span_semantic sem[FTX_MAX_MESSAGE_FIELDS + 4];
 	    memset(sem, 0, sizeof(sem));
