@@ -17,7 +17,6 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <errno.h>
-#include <time.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
