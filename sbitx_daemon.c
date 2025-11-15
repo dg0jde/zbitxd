@@ -2548,6 +2548,10 @@ void zbitx_poll(int all){
 			wf_update = 1;
 		else if (!strcmp(buff, "WF OFF"))
 			wf_update = 0;
+		else if (!strncmp(buff, "SHUTDOWN", 8)) {
+			printf("Shutting down system...\n");
+			system("sudo /sbin/shutdown -h now");
+		}
 		else{
 			if (!strncmp(buff, "OPEN", 4)){
 				update_logs = 1;
