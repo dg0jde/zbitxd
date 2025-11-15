@@ -2541,8 +2541,8 @@ void zbitx_poll(int all){
 			char ft8_message[100];
 			hd_strip_decoration(ft8_message, buff);
 			//ft8_process(ft8_message, FT8_START_QSO);
+			printf("FT8 from zbitx: %s\n", ft8_message);
 			remote_execute(ft8_message);
-			printf("FT8 processing from zbitx\n");
 		}
 		else if (!strcmp(buff, "WF ON"))
 			wf_update = 1;
