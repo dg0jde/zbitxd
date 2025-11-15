@@ -828,7 +828,8 @@ void ft8_tx_3f(const char* call_to, const char* call_de, const char* extra) {
 	ft8_pitch = field_int("TX_PITCH");
 
 	snprintf(ft8_tx_text, sizeof(ft8_tx_text), "%s %s %s", call_to, call_de, extra);
-	field_set("TEXT", ft8_tx_text);
+	// nice idea to let the user edit the outgoing message right away... but we don't necessarily want to log it
+	// field_set("TEXT", ft8_tx_text);
 	sprintf(buff, "%02d%02d%02d  TX     %4d ~ %s\n", t->tm_hour, t->tm_min, t->tm_sec, ft8_pitch, ft8_tx_text);
 	write_console(STYLE_FT8_QUEUED, buff);
 
