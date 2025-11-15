@@ -3380,6 +3380,7 @@ sd_journal *journal;
 static void
 stop(int sig)
 {
+  save_user_settings(1);
   fprintf(stderr, SD_NOTICE "zbitx service is stopping\n");
   sd_notify(0, "STOPPING=1");
   sd_journal_close(journal);
