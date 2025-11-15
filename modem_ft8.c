@@ -1081,8 +1081,10 @@ void ft8_on_start_qso(char *message){
 	}
 	//whoa, someone cold called us
 	else if (!strcmp(m1, mycall)){
+		if (!m2[0])
+			return;
 		char cur_call[20];
-	    get_field_value_by_label("CALL", cur_call);
+		get_field_value_by_label("CALL", cur_call);
 		set_call_field(m2);
 		field_set("SENT", signal_strength);
 		LOG(LOG_DEBUG, "ft8_on_start_qso cold call: rst s %s\n", signal_strength);
