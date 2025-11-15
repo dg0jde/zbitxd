@@ -74,6 +74,7 @@ int hd_next_token(const char* src, int start, char* tok, int tok_max, char * sep
 }
 
 int hd_message_parse(struct hd_message_struct* p_message, const char* raw_message) {
+	memset(p_message, 0, sizeof(struct hd_message_struct));
 	int r = hd_next_token(raw_message, 0, p_message->signal_info, 32, "~ ");
 	if (r < 0 ) return r;
 	r = hd_next_token(raw_message, r, p_message->m1, 32, " ");
