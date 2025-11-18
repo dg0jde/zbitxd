@@ -3486,8 +3486,7 @@ int main( int argc, char* argv[] ) {
 	//the logger fields may have an unfinished qso details
 	call_wipe();
 
-	if (strlen(get_field("#current_macro")->value))
-		macro_load(get_field("#current_macro")->value, NULL);
+	macro_load(get_field("#current_macro")->value, NULL);
 
 	//now set the frequency of operation and more to vfo_a
   set_field("r1:freq", get_field("#vfo_a_freq")->value);

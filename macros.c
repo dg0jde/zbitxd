@@ -75,6 +75,9 @@ void macro_label(int fn_key, char *label){
 }
 
 int  macro_load(const char *filename, char *output){
+	if (!filename || !filename[0])
+		return -2;
+
 	char macro_line[255];
 	char full_path[PATH_MAX];
 
@@ -132,6 +135,7 @@ int  macro_load(const char *filename, char *output){
 		field_set(button, label);
 	}
 
+	printf("loaded macros from %s\n", full_path);
 	return 0;
 }
 

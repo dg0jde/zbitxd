@@ -449,13 +449,6 @@ void modem_poll(int mode, int ticks)
 		// clear the text buffer
 		abort_tx();
 
-		if (current_mode == MODE_FT8 || current_mode == MODE_FT4)
-			macro_load("FT8", NULL);
-		else if (current_mode == MODE_CWR || current_mode == MODE_CW) {
-			macro_load("CW1", NULL);
-			modem_set_pitch(get_pitch());
-		}
-
 		if (current_mode == MODE_CW || current_mode == MODE_CWR)
 			cw_init();
 	}
