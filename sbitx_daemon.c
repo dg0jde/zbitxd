@@ -465,6 +465,10 @@ struct field main_controls[] = {
 		"", 4,6,1,0},
 	{"#passkey", NULL, 1000, -1000, 400, 149, "PASSKEY", 70, "123", FIELD_TEXT, 
 		"", 0,32,1,0},
+	{"#xota_loc", NULL, 1000, -1000, 400, 149, "LOCATION", 70, "PEAK/PARK/ISLE", FIELD_TEXT,
+		"", 0, 32, 1, 0},
+	{"#xota", NULL, 1000, -1000, 400, 149, "xOTA", 40, "", FIELD_SELECTION,
+		"NONE/IOTA/SOTA/POTA", 0, 0, 0, COMMON_CONTROL},
 
 	//moving global variables into fields 	
   { "#vfo_a_freq", NULL, 1000, -1000, 50, 50, "VFOA", 40, "14000000", FIELD_NUMBER,
@@ -696,9 +700,11 @@ int set_field(const char *id, const char *value){
 		if (strlen(value) > f->max || strlen(value) < f->min){
 			printf("*Error: field[%s] can't be set to [%s], improper size.\n", f->cmd, value);
 			return 1;
-		}
-		else
+		} else {
+			if (debug)
+				printf("field text [%s] value=[%s]\n", f->cmd, value);
 			strcpy(f->value, value);
+		}
 	}
 
 	if (!strcmp(id, "#rit") || !strcmp(id, "#ft8_auto"))
