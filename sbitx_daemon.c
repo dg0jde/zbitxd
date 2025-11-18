@@ -377,7 +377,7 @@ struct field main_controls[] = {
 		"ON/OFF", 0,0,0,COMMON_CONTROL},
 
 	{ "r1:mode", NULL, 5, 5, 40, 40, "MODE", 40, "USB", FIELD_SELECTION, 
-		"USB/LSB/CW/CWR/FT8/AM/DIGI/2TONE", 0,0,0, COMMON_CONTROL},
+		"USB/LSB/CW/CWR/FT8/FT4/AM/DIGI/2TONE", 0,0,0, COMMON_CONTROL},
 	{ "#bw", do_bandwidth, 495, 5, 40, 40, "BW", 40, "", FIELD_NUMBER, 
 		"", 50, 5000, 50,COMMON_CONTROL},
 
@@ -1007,6 +1007,8 @@ static int mode_id(const char *mode_str){
 		return MODE_LSB;
 	else if (mode_str[0] == 'F' && mode_str[1] == 'T' && mode_str[2] == '8' && mode_str[3] == 0)
 		return MODE_FT8;
+	else if (mode_str[0] == 'F' && mode_str[1] == 'T' && mode_str[2] == '4' && mode_str[3] == 0)
+		return MODE_FT4;
 	else if (mode_str[0] == 'N' && mode_str[1] == 'B' && mode_str[2] == 'F' && mode_str[3] == 'M')
 		return MODE_NBFM;
 	else if (mode_str[0] == 'A' && mode_str[1] == 'M' && mode_str[2] == '0')
@@ -1059,6 +1061,8 @@ static char *mode_name(int mode_id, char *name){
 			return strcpy(name, "AM");
 		case MODE_FT8:
 			return strcpy(name, "FT8");
+		case MODE_FT4:
+			return strcpy(name, "FT4");
 		case MODE_DIGITAL:
 			return strcpy(name, "DIGI");
 		case MODE_2TONE:
@@ -1147,13 +1151,17 @@ void enter_qso(){
 		field_str("RECV"), field_str("EXCH"));
 	write_console(STYLE_LOG, buff);
 	update_logs = 1;
-	//wipe the call if not FT8
-	if (strcmp(field_str("MODE"), "FT8"))
+	// wipe the call if not FT8/FT4
+	switch (mode_id(field_str("MODE"))) {
+	case MODE_FT4:
+	case MODE_FT8:
+		break;
+	default:
 		call_wipe();
+	}
 }
 
-static int user_settings_handler(void *user, const char *section,
-								 const char *name, const char *value)
+static int user_settings_handler(void *user, const char *section, const char *name, const char *value)
 {
 	char cmd[1000];
 	char new_value[200];
@@ -1588,6 +1596,7 @@ void set_filter_high_low(int hz){
 			low = 300;
 			high = hz;
 			break;
+		case MODE_FT4:
 		case MODE_FT8:
 			low = 50;
 			high = 4000;
@@ -1655,8 +1664,7 @@ int do_text(struct field *f, int event, int a, int b, int c){
 			f->value[0] = 0;
 			update_field(f);
 		}
-		else if ((a =='\n' || a == MIN_KEY_ENTER) && !strcmp(get_field("r1:mode")->value, "FT8") 
-			&& f->value[0] != COMMAND_ESCAPE){
+		else if ((a == '\n' || a == MIN_KEY_ENTER) && !strncmp(get_field("r1:mode")->value, "FT", 2) && f->value[0] != COMMAND_ESCAPE){
 			ft8_tx(f->value, field_int("TX_PITCH"));
 			f->value[0] = 0;		
 		}
@@ -1731,6 +1739,7 @@ int do_pitch(struct field *f, int event, int a, int b, int c){
 			case MODE_LSB:
 				bw = field_int("BW_VOICE");
 				break;
+			case MODE_FT4:
 			case MODE_FT8:
 				bw = 4000;
 				break;	
@@ -1926,7 +1935,7 @@ int do_macro(struct field *f, int event, int a, int b, int c){
 	
 		mode = get_field("r1:mode")->value;
 
-		if (!strcmp(mode, "FT8") && strlen(buff)){
+		if (!strncmp(get_field("r1:mode")->value, "FT", 2) && strlen(buff)){
 			ft8_tx(buff, atoi(get_field("#tx_pitch")->value));
 			set_field("#text_in", "");
 			//write_console(STYLE_LOG_TX, buff);
@@ -2356,6 +2365,7 @@ void set_radio_mode(char *mode){
 		case MODE_AM:
 			new_bandwidth = field_int("BW_VOICE");
 			break;
+		case MODE_FT4:
 		case MODE_FT8:
 			new_bandwidth = 4000;
 			break;
@@ -2541,7 +2551,7 @@ void zbitx_poll(int all){
 			char ft8_message[100];
 			hd_strip_decoration(ft8_message, buff);
 			//ft8_process(ft8_message, FT8_START_QSO);
-			printf("FT8 from zbitx: %s\n", ft8_message);
+			printf("FT4/8 from zbitx: %s\n", ft8_message);
 			remote_execute(ft8_message);
 		}
 		else if (!strcmp(buff, "WF ON"))
@@ -2654,6 +2664,7 @@ bool ui_tick(){
 		case MODE_CWR:
 			tick_count = 50;
 			break;
+		case MODE_FT4:
 		case MODE_FT8:
 			tick_count = 200;
 			break;

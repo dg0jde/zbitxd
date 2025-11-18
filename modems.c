@@ -66,7 +66,6 @@ int qso_state = QSO_STATE_ZOMBIE;
 */
 
 static int current_mode = -1;
-static unsigned long millis_now = 0;
 
 /* ---- Base64 Encoding/Decoding Table --- */
 char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -401,6 +400,7 @@ void modem_rx(int mode, int32_t* samples, int count)
 
 	s = samples;
 	switch (mode) {
+	case MODE_FT4:
 	case MODE_FT8:
 		ft8_rx(samples, count);
 		break;
@@ -436,8 +436,6 @@ void modem_poll(int mode, int ticks)
 	time_t t;
 	char buffer[10000];
 
-	millis_now = millis();
-
 	if (current_mode != mode) {
 		// flush out the past decodes
 		// printf("modem_poll set to %d\n", mode);
@@ -451,7 +449,7 @@ void modem_poll(int mode, int ticks)
 		// clear the text buffer
 		abort_tx();
 
-		if (current_mode == MODE_FT8)
+		if (current_mode == MODE_FT8 || current_mode == MODE_FT4)
 			macro_load("FT8", NULL);
 		else if (current_mode == MODE_CWR || current_mode == MODE_CW) {
 			macro_load("CW1", NULL);
@@ -463,11 +461,10 @@ void modem_poll(int mode, int ticks)
 	}
 
 	switch (mode) {
+	case MODE_FT4:
 	case MODE_FT8:
-		if (ticks % 100) {
-			t = time(NULL);
-			ft8_poll(t % 60, tx_is_on);
-		}
+		if (ticks % 50 == 0)
+			ft8_poll(tx_is_on);
 		break;
 	case MODE_CW:
 	case MODE_CWR: {
@@ -484,6 +481,7 @@ float modem_next_sample(int mode)
 	switch (mode) {
 		// the ft8 samples are generated at 12ksps, we need to feed the
 		// sdr with 96 ksps (eight times as much)
+	case MODE_FT4:
 	case MODE_FT8:
 		sample = ft8_next_sample();
 		break;
@@ -504,6 +502,7 @@ void modem_abort()
 		NULL;
 
 	switch (current_mode) {
+	case MODE_FT4:
 	case MODE_FT8:
 		ft8_abort();
 		break;

@@ -140,19 +140,23 @@ static inline double const cnrm(const complex double x){
 
 #define power2dB(x) (10*log10f(x))
 
-#define MAX_MODES 11 
-
-#define MODE_USB 0
-#define MODE_LSB 1
-#define MODE_CW 2
-#define MODE_CWR 3
-#define MODE_NBFM 4 
-#define MODE_AM 5 
-#define MODE_FT8 6  
-#define MODE_DIGITAL 7 
-#define MODE_2TONE 8 
-#define MODE_TUNE 9
-#define MODE_CALIBRATE 10 
+enum _mode {
+	MODE_USB = 0,
+	MODE_LSB,
+	MODE_CW,
+	MODE_CWR,
+	MODE_NBFM,
+	MODE_AM,
+	MODE_FT8,
+	MODE_FT4,
+	MODE_PSK31,
+	MODE_RTTY,
+	MODE_DIGITAL,
+	MODE_2TONE,
+	MAX_MODES = MODE_2TONE + 1,
+	MODE_CALIBRATE,
+	MODE_TUNE,
+};
 
 struct rx {
 	long tuned_bin;					//tuned bin (this should translate to freq) 

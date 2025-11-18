@@ -818,7 +818,7 @@ void tx_process(
 			i_sample = (1.0 * vfo_read(&tone_a)) / 50000000000.0;
 		else if (r->mode == MODE_CALIBRATE)
 			i_sample = (1.0 * (vfo_read(&tone_a))) / 30000000000.0;
-		else if (r->mode == MODE_CW || r->mode == MODE_CWR || r->mode == MODE_FT8)
+		else if (r->mode == MODE_CW || r->mode == MODE_CWR || r->mode == MODE_FT8 || r->mode == MODE_FT4)
 			i_sample = modem_next_sample(r->mode) / 3;
 		else if (r->mode == MODE_AM) {
 			double modulation = (1.0 * input_mic[j]) / 200000000.0;
@@ -839,6 +839,7 @@ void tx_process(
 			break;
 		case MODE_CW:
 		case MODE_CWR:
+		case MODE_FT4:
 		case MODE_FT8:
 			output_speaker[j] = (int)(i_sample * 20000000.0) * sidetone;
 			break;
@@ -1452,6 +1453,8 @@ void sdr_request(char* request, char* response)
 			rx_list->mode = MODE_2TONE;
 		else if (!strcmp(value, "TUNE"))
 			rx_list->mode = MODE_TUNE;
+		else if (!strcmp(value, "FT4"))
+			rx_list->mode = MODE_FT4;
 		else if (!strcmp(value, "FT8"))
 			rx_list->mode = MODE_FT8;
 		else if (!strcmp(value, "AM"))

@@ -50,7 +50,6 @@ extern void call_wipe();
 // how to handle a command option
 #define FT8_START_QSO 1
 #define FT8_CONTINUE_QSO 0
-static unsigned int wallclock =0;
 static const int kMin_score = 10; // Minimum sync score threshold for candidates
 static const int kMax_candidates = 120;
 static const int kLDPC_iterations = 20;
@@ -62,13 +61,13 @@ static const int kTime_osr = 2; // Time oversampling rate (symbol subdivision)
 
 // styles to use for each enum value in ftx_field_t
 static const int kFieldType_style_map[] = {
-    STYLE_LOG,		// FTX_FIELD_UNKNOWN
-    STYLE_LOG,		// FTX_FIELD_NONE
-    STYLE_FT8_RX,	// FTX_FIELD_TOKEN
-    STYLE_FT8_RX,	// FTX_FIELD_TOKEN_WITH_ARG
-    STYLE_CALLER,	// FTX_FIELD_CALL
-    STYLE_GRID,		// FTX_FIELD_GRID
-    STYLE_LOG		// FTX_FIELD_RST
+	STYLE_LOG,		// FTX_FIELD_UNKNOWN
+	STYLE_LOG,		// FTX_FIELD_NONE
+	STYLE_FT8_RX,	// FTX_FIELD_TOKEN
+	STYLE_FT8_RX,	// FTX_FIELD_TOKEN_WITH_ARG
+	STYLE_CALLER,	// FTX_FIELD_CALL
+	STYLE_GRID,		// FTX_FIELD_GRID
+	STYLE_LOG		// FTX_FIELD_RST
 };
 
 #define FT8_SYMBOL_BT 2.0f ///< symbol smoothing filter bandwidth factor (BT)
@@ -250,20 +249,21 @@ static void synth_gfsk(const uint8_t* symbols, int n_sym, float f0, float symbol
 }
 
 /*!
-    Encode ftx_tx_msg.payload onto audio carrier \a freq and output to \a signal.
-    \a is_ft4 chooses FT4 encoding instead of FT8.
-    @return the number of audio samples
+	Encode ftx_tx_msg.payload onto audio carrier \a freq and output to \a signal.
+	@return the number of audio samples
 */
-int sbitx_ftx_msg_audio(int32_t freq, float *signal, bool is_ft4)
+int sbitx_ftx_msg_audio(int32_t freq, float *signal)
 {
-    if (!freq)
-        freq = field_int("TX_PITCH");
+	if (!freq)
+		freq = field_int("TX_PITCH");
     float frequency = 1.0 * freq;
 
-    int num_tones = (is_ft4) ? FT4_NN : FT8_NN;
-    float symbol_period = (is_ft4) ? FT4_SYMBOL_PERIOD : FT8_SYMBOL_PERIOD;
-    float symbol_bt = (is_ft4) ? FT4_SYMBOL_BT : FT8_SYMBOL_BT;
-    float slot_time = (is_ft4) ? FT4_SLOT_TIME : FT8_SLOT_TIME;
+	bool is_ft4 = !strcmp(field_str("MODE"), "FT4");
+
+	int num_tones = is_ft4 ? FT4_NN : FT8_NN;
+	float symbol_period = is_ft4 ? FT4_SYMBOL_PERIOD : FT8_SYMBOL_PERIOD;
+	float symbol_bt = is_ft4 ? FT4_SYMBOL_BT : FT8_SYMBOL_BT;
+	float slot_time = is_ft4 ? FT4_SLOT_TIME : FT8_SLOT_TIME;
 
     // Second, encode the binary message as a sequence of FSK tones
     uint8_t tones[num_tones]; // Array of 79 tones (symbols)
@@ -284,18 +284,19 @@ int sbitx_ftx_msg_audio(int32_t freq, float *signal, bool is_ft4)
     }
 
     // Synthesize waveform data (signal) and save it as WAV file
+	//~ printf("%s synth_gfsk %d %f %f %f %d samples %d silence %d\n",
+		//~ (is_ft4 ? "FT4" : "FT8"), num_tones, frequency, symbol_bt, symbol_period, sample_rate, num_samples, num_silence);
     synth_gfsk(tones, num_tones, frequency, symbol_bt, symbol_period, sample_rate, signal + num_silence);
     return num_total_samples;
 }
 
 /*!
-    Encode \a message into ftx_tx_msg.
-    \a is_ft4 chooses FT4 encoding instead of FT8.
-    This should only be used when the user has typed \a message;
-    for programmatic cases, prefer sbitx_ft8_encode_3f'()
-    @return the return value from ftx_message_encode (see enum ftx_message_rc_t in ft8_lib/message.h)
+	Encode \a message into ftx_tx_msg.
+	This should only be used when the user has typed \a message;
+	for programmatic cases, prefer sbitx_ft8_encode_3f'()
+	@return the return value from ftx_message_encode (see enum ftx_message_rc_t in ft8_lib/message.h)
 */
-int sbitx_ft8_encode(char *message, bool is_ft4)
+int sbitx_ft8_encode(char *message)
 {
     ftx_message_rc_t rc = ftx_message_encode(&ftx_tx_msg, &hash_if, message);
     if (rc != FTX_MESSAGE_RC_OK)
@@ -303,29 +304,31 @@ int sbitx_ft8_encode(char *message, bool is_ft4)
         printf("Cannot encode FTx message! RC = %d\n", (int)rc);
         return -1;
     }
-    return rc;
+
+	return rc;
 }
 
 /*!
-    Compose a message from the 3 fields \a call_to, \a call_de and \a extra into ftx_tx_msg.
-    \a is_ft4 chooses FT4 encoding instead of FT8.
-    @return the return value from ftx_message_encode_std/nonstd/free
-    (see enum ftx_message_rc_t in ft8_lib/message.h)
+	Compose a message from the 3 fields \a call_to, \a call_de and \a extra into ftx_tx_msg.
+	@return the return value from ftx_message_encode_std/nonstd/free
+	(see enum ftx_message_rc_t in ft8_lib/message.h)
 */
-int sbitx_ft8_encode_3f(const char* call_to, const char* call_de, const char* extra, bool is_ft4)
+int sbitx_ft8_encode_3f(const char* call_to, const char* call_de, const char* extra)
 {
-    ftx_message_rc_t rc = ftx_message_encode_std(&ftx_tx_msg, &hash_if, call_to, call_de, extra);
-    if (rc != FTX_MESSAGE_RC_OK) {
-	LOG(LOG_DEBUG, "   ftx_message_encode_std failed: %d\n", rc);
-	rc = ftx_message_encode_nonstd(&ftx_tx_msg, &hash_if, call_to, call_de, extra);
+	ftx_message_rc_t rc = ftx_message_encode_std(&ftx_tx_msg, &hash_if, call_to, call_de, extra);
 	if (rc != FTX_MESSAGE_RC_OK) {
-	    LOG(LOG_DEBUG, "   ftx_message_encode_nonstd failed: %d\n", rc);
-	    rc = ftx_message_encode_free(&ftx_tx_msg, ft8_tx_text);
+		LOG(LOG_DEBUG, "   ftx_message_encode_std failed: %d\n", rc);
+		rc = ftx_message_encode_nonstd(&ftx_tx_msg, &hash_if, call_to, call_de, extra);
+		if (rc != FTX_MESSAGE_RC_OK) {
+			LOG(LOG_DEBUG, "   ftx_message_encode_nonstd failed: %d\n", rc);
+			rc = ftx_message_encode_free(&ftx_tx_msg, ft8_tx_text);
+		}
 	}
-    }
+
     if (rc != FTX_MESSAGE_RC_OK)
         printf("Cannot encode FTx 3-field message! RC = %d\n", (int)rc);
-    return rc;
+
+	return rc;
 }
 
 static float hann_i(int i, int N)
@@ -521,18 +524,37 @@ static void monitor_reset(monitor_t* me)
 
 static int message_callsign_count(const ftx_message_offsets_t *spans)
 {
-    int ret = 0;
-    for (int i = 0; i < FTX_MAX_MESSAGE_FIELDS; ++i)
-	if (spans->types[i] == FTX_FIELD_CALL)
-	    ++ret;
-    return ret;
+	int ret = 0;
+	for (int i = 0; i < FTX_MAX_MESSAGE_FIELDS; ++i)
+		if (spans->types[i] == FTX_FIELD_CALL)
+			++ret;
+	return ret;
 }
 
-static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
+#define SECS_IN_DAY (24 * 60 * 60)
+static int wallclock_day_ms = 0; // starts from 0 each day
+
+static void ftx_update_clock()
+{
+	struct timespec  ts;
+
+	if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+	   perror("clock_gettime");
+	   exit(EXIT_FAILURE);
+	}
+
+	time_t ms = ts.tv_nsec / 1000000;
+	wallclock_day_ms = (ts.tv_sec % SECS_IN_DAY) * 1000 + ms;
+	//~ printf("time %lld.%lld: %d min ms %d\n", ts.tv_sec, ms, wallclock_day_ms, wallclock_day_ms % 60000);
+}
+
+static int sbitx_ft8_decode(float *signal, int num_samples)
 {
     int sample_rate = 12000;
+	bool is_ft8 = !strcmp(field_str("MODE"), "FT8");
 
-    LOG(LOG_DEBUG, "Sample rate %d Hz, %d samples, %.3f seconds\n", sample_rate, num_samples, (double)num_samples / sample_rate);
+    LOG(LOG_DEBUG, "sbitx_ftx_decode: %s sample rate %d Hz, %d samples, %.3f seconds\n",
+		(is_ft8 ? "FT8" : "FT4"), sample_rate, num_samples, (double)num_samples / sample_rate);
 
     // Compute FFT over the whole signal and store it
     monitor_t mon;
@@ -545,21 +567,31 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
         .protocol = is_ft8 ? FTX_PROTOCOL_FT8 : FTX_PROTOCOL_FT4
     };
 
-		//timestamp the packets
-		//the time is shifted back by the time it took to capture these sameples
-		time_t	rawtime = (time(NULL) / 15) * 15; //round to the earlier slot
-		char time_str[20], response[100];
-		struct tm *t = gmtime(&rawtime);
-		sprintf(time_str, "%02d%02d%02d", t->tm_hour, t->tm_min, t->tm_sec);
-		const int time_str_len = strlen(time_str);
+	// timestamp the packets
+	// the time is shifted back by the time it took to capture these samples
+	const int packet_time_ms = is_ft8 ? 15000 : 7500;
+	const int raw_ms = (wallclock_day_ms / packet_time_ms) * packet_time_ms;
 
-		int i;
-		char mycallsign_upper[20];
-		char mycallsign[20];
-		get_field_value("#mycallsign", mycallsign);
-		for (i = 0; i < strlen(mycallsign); i++)
-			mycallsign_upper[i] = toupper(mycallsign[i]);
-		mycallsign_upper[i] = 0;
+	char time_str[20], response[100];
+	int raw_s = raw_ms / 1000;
+	int h = raw_s / 3600;
+	int m = (raw_s - (h * 3600)) / 60;  // (s % 3600) / 60;
+	int s = raw_s % 60;
+	int half_sec = (raw_ms % 1000) / 100;
+	// TODO use a helper function
+	const int time_str_len = half_sec ?
+		sprintf(time_str, "%02d%02d%02d.%01d", h, m, s, half_sec) :
+		sprintf(time_str, "%02d%02d%02d  ", h, m, s);
+
+	//~ printf("actual millisecond %d, assume packets started @ %s\n", wallclock_day_ms % 60000, time_str);
+
+	int i;
+	char mycallsign_upper[20];
+	char mycallsign[20];
+	get_field_value("#mycallsign", mycallsign);
+	for (i = 0; i < strlen(mycallsign); i++)
+		mycallsign_upper[i] = toupper(mycallsign[i]);
+	mycallsign_upper[i] = 0;
 
     monitor_init(&mon, &mon_cfg);
 
@@ -585,7 +617,7 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
         decoded_hashtable[i] = NULL;
     }
 
-		int n_decodes = 0;
+	int n_decodes = 0;
     // Go over candidates and attempt to decode messages
     for (int idx = 0; idx < num_candidates; ++idx)
     {
@@ -594,6 +626,7 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
             continue;
 
         int freq_hz = lroundf((cand->freq_offset + (float)cand->freq_sub / mon.wf.freq_osr) / mon.symbol_period);
+		//~ printf("freq_hz: (%d + %d / %d) / %f = %d\n", cand->freq_offset, cand->freq_sub, mon.wf.freq_osr, mon.symbol_period, freq_hz);
         float time_sec = (cand->time_offset + (float)cand->time_sub / mon.wf.time_osr) * mon.symbol_period;
 
         ftx_message_t message;
@@ -607,7 +640,7 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
             continue;
         }
 
-        LOG(LOG_DEBUG, "Checking hash table for %4.1fs / %4.1fHz [%d]...\n", time_sec, freq_hz, cand->score);
+        LOG(LOG_DEBUG, "Checking hash table for %4.1fs / %dHz [%d]...\n", time_sec, freq_hz, cand->score);
         int idx_hash = message.hash % kMax_decoded_messages;
         bool found_empty_slot = false;
         bool found_duplicate = false;
@@ -635,82 +668,95 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
            decoded_hashtable[idx_hash] = &decoded[idx_hash];
            ++num_decoded;
 
-           char text[FTX_MAX_MESSAGE_LENGTH];
-           ftx_message_offsets_t spans;
-           ftx_message_rc_t unpack_status = ftx_message_decode(&message, &hash_if, text, &spans);
-           if (unpack_status != FTX_MESSAGE_RC_OK)
-              LOG(LOG_DEBUG, "Error [%d] while unpacking!", (int)unpack_status);
+            char text[FTX_MAX_MESSAGE_LENGTH];
+			ftx_message_offsets_t spans;
+            ftx_message_rc_t unpack_status = ftx_message_decode(&message, &hash_if, text, &spans);
+            if (unpack_status != FTX_MESSAGE_RC_OK)
+                LOG(LOG_DEBUG, "Error [%d] while unpacking!", (int)unpack_status);
 
-           char buf[64];
-           int prefix_len = snprintf(buf, sizeof(buf), "%s %3d %+03d %4d ~ ", time_str, cand->score, cand->snr, freq_hz);
-           int line_len = prefix_len + snprintf(buf + prefix_len, sizeof(buf) - prefix_len, "%s\n", text);
-           LOG(LOG_DEBUG, "-> %s\n", buf);
+			//message_add(char *mode, unsigned int frequency, int outgoing, char *message);
+			// TODO if allowed by settings:
+			message_add("FT8", freq_hz, 0, text);
 
-	    text_span_semantic sem[FTX_MAX_MESSAGE_FIELDS + 4];
-	    memset(sem, 0, sizeof(sem));
-	    bool my_call_found = false;
-	    int calls_found = 0;
-	    int total_calls = message_callsign_count(&spans);
-	    int span_i = 0;
-	    int sem_i = 0;
-	    int col = 0;
-	    sem[sem_i].length = line_len;
-	    sem[sem_i++].semantic = STYLE_FT8_RX;
-	    sem[sem_i].length = time_str_len; // 6
-	    sem[sem_i++].semantic = STYLE_TIME;
-	    col = time_str_len + 5; // skip "score"
-	    sem[sem_i].start_column = col;
-	    sem[sem_i].length = 3;
-	    sem[sem_i++].semantic = STYLE_SNR;
-	    col += 4;
-	    sem[sem_i].start_column = col;
-	    sem[sem_i].length = 4;
-	    sem[sem_i++].semantic = STYLE_FREQ;
-	    for (; span_i < FTX_MAX_MESSAGE_FIELDS && sem_i < MAX_CONSOLE_LINE_STYLES &&
-		spans.offsets[span_i] >= 0; ++span_i, ++sem_i) {
-		sem[sem_i].start_column = prefix_len + spans.offsets[span_i];
-		// each span ends where the next starts (ftx_message_offsets_t does not have lengths, so far)
-		if (sem_i > 4) {
-		    sem[sem_i - 1].length = sem[sem_i].start_column - sem[sem_i - 1].start_column;
-		    //~ printf("length of span %d: %d - %d = %d\n", sem_i - 1, sem[sem_i].start_column, sem[sem_i - 1].start_column, sem[sem_i - 1].length);
-		}
-		if (spans.types[span_i] == FTX_FIELD_CALL) {
-		    // detect whether it's my callsign or the caller's
-		    char *call = text + spans.offsets[span_i];
-		    char *call_end = strchr(call, ' ');
-		    if (!call_end)
-			call_end = call + strlen(call);
-		    assert(call_end);
-		    if (*call == '<')
-			++call;
-		    if (*(call_end - 1) == '>')
-			--call_end;
-		    //~ printf("considering call %d of %d: first %d chars of %s\n", calls_found, total_calls, call_end - call, call);
-		    if (!strncmp(call, mycallsign_upper, call_end - call)) {
-			sem[sem_i].semantic = STYLE_MYCALL;
-			my_call_found = true;
-		    } else if (!calls_found && total_calls > 1) {
-			// the first callsign is the callee, unless it's a single-call message (such as CQ):
-			// less interesting then, unless it's my call
-			sem[sem_i].semantic = STYLE_CALLEE;
-		    } else {
-			// otherwise the callsign is presumably the caller
-			// (since we don't support multi-part messages yet)
-			sem[sem_i].semantic = STYLE_CALLER;
-		    }
-		    ++calls_found;
-		    continue; // with the for loop, so as to skip the next line below
-		}
-		sem[sem_i].semantic = kFieldType_style_map[spans.types[span_i]];
-            }
-            // set length of the last span (no next span, but null terminator in text)
-            if (span_i > 0)
-                sem[sem_i - 1].length = strlen(text + spans.offsets[span_i - 1]);
-            write_console_semantic(buf, sem, sem_i);
-            if (my_call_found)
-                ft8_process(buf, FT8_CONTINUE_QSO);
-            n_decodes++;
-      }
+			char buf[64];
+			const int message_type = ftx_message_get_i3(&message);
+			//~ char type_utf8[4] = {0xE2, message_type ? 0x91 : 0x93, message_type ? 0xA0 + message_type - 1 : 0xAA, 0 };
+			int prefix_len = snprintf(buf, sizeof(buf), "%s %3d %+03d %4d ~ ", time_str, cand->score, cand->snr, freq_hz);
+			int line_len = prefix_len + snprintf(buf + prefix_len, sizeof(buf) - prefix_len, "%s\n", text);
+			if (message_type) // not type 0
+				LOG(LOG_INFO, ">> %d %s\n", message_type, buf);
+			else // type 0 : we care about the subtype (n3)
+				LOG(LOG_INFO, ">> %d.%d %s\n", message_type, ftx_message_get_n3(&message), buf);
+			//For troubleshooting you can display the time offset - n1qm
+			//sprintf(buff, "%s %d %+03d %-4.0f ~  %s\n", time_str, cand->time_offset,
+			//  cand->snr, freq_hz, message.payload);
+			text_span_semantic sem[FTX_MAX_MESSAGE_FIELDS + 4];
+			memset(sem, 0, sizeof(sem));
+			bool my_call_found = false;
+			int calls_found = 0;
+			int total_calls = message_callsign_count(&spans);
+			int span_i = 0;
+			int sem_i = 0;
+			int col = 0;
+			sem[sem_i].length = line_len;
+			sem[sem_i++].semantic = STYLE_FT8_RX;
+			sem[sem_i].length = time_str_len; // 8
+			sem[sem_i++].semantic = STYLE_TIME;
+			col = time_str_len + 5; // skip "score"
+			sem[sem_i].start_column = col;
+			sem[sem_i].length = 3;
+			sem[sem_i++].semantic = STYLE_SNR;
+			col += 4;
+			sem[sem_i].start_column = col;
+			sem[sem_i].length = 4;
+			sem[sem_i++].semantic = STYLE_FREQ;
+
+			for (; span_i < FTX_MAX_MESSAGE_FIELDS && sem_i < MAX_CONSOLE_LINE_STYLES &&
+					spans.offsets[span_i] >= 0; ++span_i, ++sem_i) {
+				sem[sem_i].start_column = prefix_len + spans.offsets[span_i];
+				// each span ends where the next starts (ftx_message_offsets_t does not have lengths, so far)
+				if (sem_i > 4) {
+					sem[sem_i - 1].length = sem[sem_i].start_column - sem[sem_i - 1].start_column;
+					//~ printf("length of span %d: %d - %d = %d\n", sem_i - 1, sem[sem_i].start_column, sem[sem_i - 1].start_column, sem[sem_i - 1].length);
+				}
+				if (spans.types[span_i] == FTX_FIELD_CALL) {
+					// detect whether it's my callsign or the caller's
+					char *call = text + spans.offsets[span_i];
+					char *call_end = strchr(call, ' ');
+					if (!call_end)
+						call_end = call + strlen(call);
+					assert(call_end);
+					if (*call == '<')
+						++call;
+					if (*(call_end - 1) == '>')
+						--call_end;
+					//~ printf("considering call %d of %d: first %d chars of %s\n", calls_found, total_calls, call_end - call, call);
+					if (!strncmp(call, mycallsign_upper, call_end - call)) {
+						sem[sem_i].semantic = STYLE_MYCALL;
+						my_call_found = true;
+					} else if (!calls_found && total_calls > 1) {
+						// the first callsign is the callee, unless it's a single-call message (such as CQ):
+						// less interesting then, unless it's my call
+						sem[sem_i].semantic = STYLE_CALLEE;
+					} else {
+						// otherwise the callsign is presumably the caller
+						// (since we don't support multi-part messages yet)
+						sem[sem_i].semantic = STYLE_CALLER;
+					}
+					++calls_found;
+					continue; // with the for loop, so as to skip the next line below
+				}
+				sem[sem_i].semantic = kFieldType_style_map[spans.types[span_i]];
+			}
+			// set length of the last span (no next span, but null terminator in text)
+			if (span_i > 0)
+				sem[sem_i - 1].length = strlen(text + spans.offsets[span_i - 1]);
+			write_console_semantic(buf, sem, sem_i);
+
+			if (my_call_found)
+				ft8_process(buf, FT8_CONTINUE_QSO);
+			n_decodes++;
+        }
     }
     //LOG(LOG_INFO, "Decoded %d messages\n", num_decoded);
 
@@ -724,8 +770,8 @@ static int sbitx_ft8_decode(float *signal, int num_samples, bool is_ft8)
 //current message, it is not the user setting of the same number
 static int ft8_repeat = 5;
 
-int sbitx_ft8_encode(char *message, bool is_ft4);
-int sbitx_ft8_encode_3f(const char* call_to, const char* call_de, const char* extra, bool is_ft4);
+int sbitx_ft8_encode(char *message);
+int sbitx_ft8_encode_3f(const char* call_to, const char* call_de, const char* extra);
 
 void ft8_setmode(int config){
 	switch(config){
@@ -744,7 +790,7 @@ void ft8_setmode(int config){
 	}
 }
 
-static void ft8_start_tx(int offset_seconds){
+static void ftx_start_tx(int offset_ms){
 	char buf[100];
 	//timestamp the packets for display log
 	time_t	rawtime = time(NULL);
@@ -753,40 +799,60 @@ static void ft8_start_tx(int offset_seconds){
 	int freq = field_int("TX_PITCH");
 	if (freq != ft8_pitch)
 		ft8_pitch = freq;
-	ft8_tx_nsamples = sbitx_ftx_msg_audio(freq,  ft8_tx_buff, /* is_ft4*/ false);
+	ft8_tx_nsamples = sbitx_ftx_msg_audio(freq,  ft8_tx_buff);
 
+	// TODO time-formatting helper, 0.5-sec resolution when needed
 	snprintf(buf, sizeof(buf), "%02d%02d%02d  TX     %4d ~ %s\n", t->tm_hour, t->tm_min, t->tm_sec, ft8_pitch, ft8_tx_text);
 	write_console(STYLE_FT8_TX, buf);
 	message_add("FT8", ft8_pitch, 1, ft8_tx_text);
 
-	ft8_tx_buff_index = offset_seconds * 96000;
-	printf("ft8_start_tx: starting @index %d based on offset_seconds %d\n", ft8_tx_buff_index, offset_seconds);
+	const int message_type = ftx_message_get_i3(&ftx_tx_msg);
+	if (message_type) // not type 0
+		LOG(LOG_INFO, "<< %d %s", message_type, buf);
+	else // type 0 : we care about the subtype (n3)
+		LOG(LOG_INFO, "<< %d.%d %s", message_type, ftx_message_get_n3(&ftx_tx_msg), buf);
+
+	// start at the beginning if at all reasonable
+	if (offset_ms < 1000)
+		offset_ms = 0;
+	ft8_tx_buff_index = offset_ms * 96;
+	printf("ftx_start_tx: starting @index %d based on offset_ms %d\n", ft8_tx_buff_index, offset_ms);
 }
 
 /*!
-    Encode and schedule \a message for transmission, modulated on \a freq.
-    It is picked up by ft8_poll to do the actual transmission.
-    \a message may be anything: ft8_lib has to parse it and guess the message type to use.
-    So it's better to call ft8_tx_3f(to, de, extra) in all programmatic cases,
-    and use this function only when the user is doing the typing.
+	Encode and schedule \a message for transmission, modulated on \a freq.
+	It is picked up by ft8_poll to do the actual transmission.
+	\a message may be anything: ft8_lib has to parse it and guess the message type to use.
+	So it's better to call ft8_tx_3f(to, de, extra) in all programmatic cases,
+	and use this function only when the user is doing the typing.
 */
 void ft8_tx(char *message, int freq){
-	char cmd[200], buff[1000];
+	char cmd[200], buf[64];
 	FILE	*pf;
 	time_t	rawtime = time(NULL);
 	struct tm *t = gmtime(&rawtime);
 
 	for (int i = 0; i < strlen(message); i++)
 		message[i] = toupper(message[i]);
-	strcpy(ft8_tx_text, message);
+	if (sbitx_ft8_encode(message) != FTX_MESSAGE_RC_OK) {
+		LOG(LOG_INFO, "failed to encode: nothing to transmit\n");
+		return;
+	}
+
+	strncpy(ft8_tx_text, message, sizeof(ft8_tx_text));
 	if (!freq) {
 		freq = field_int("TX_PITCH");
 		ft8_pitch = freq;
 	}
-	sbitx_ft8_encode(ft8_tx_text, false);
+	const int message_type = ftx_message_get_i3(&ftx_tx_msg);
 
-	sprintf(buff, "%02d%02d%02d  TX     %4d ~ %s\n", t->tm_hour, t->tm_min, t->tm_sec, freq, ft8_tx_text);
-	write_console(STYLE_FT8_QUEUED, buff);
+	// TODO time-formatting helper, 0.5-sec resolution when needed
+	snprintf(buf, sizeof(buf), "%02d%02d%02d  TX     %4d ~ %s\n", t->tm_hour, t->tm_min, t->tm_sec, freq, ft8_tx_text);
+	write_console(STYLE_FT8_QUEUED, buf);
+	if (message_type) // not type 0
+		LOG(LOG_INFO, "<- %d %s", message_type, buf);
+	else // type 0 : we care about the subtype (n3)
+		LOG(LOG_INFO, "<- %d.%d %s", message_type, ftx_message_get_n3(&ftx_tx_msg), buf);
 
 	//also set the times of transmission
 	char str_tx1st[10], str_repeat[10];
@@ -812,12 +878,12 @@ void ft8_tx(char *message, int freq){
 }
 
 /*!
-    Encode and schedule a message for transmission, composed from the 3 fields
-    \a call_to (which may alternatively be things like "CQ", "CQ SOTA", ...),
-    \a call_de, and \a extra (which is for grid, RST, RRnn, RRR, 73).
-    It is picked up by ft8_poll to do the actual transmission.
-    The encoding will be std if possible, falling back to nonstd otherwise,
-    and then falling back to free text if all else fails.
+	Encode and schedule a message for transmission, composed from the 3 fields
+	\a call_to (which may alternatively be things like "CQ", "CQ SOTA", ...),
+	\a call_de, and \a extra (which is for grid, RST, RRnn, RRR, 73).
+	It is picked up by ft8_poll to do the actual transmission.
+	The encoding will be std if possible, falling back to nonstd otherwise,
+	and then falling back to free text if all else fails.
 */
 void ft8_tx_3f(const char* call_to, const char* call_de, const char* extra) {
 	char cmd[200], buff[1000];
@@ -830,10 +896,11 @@ void ft8_tx_3f(const char* call_to, const char* call_de, const char* extra) {
 	snprintf(ft8_tx_text, sizeof(ft8_tx_text), "%s %s %s", call_to, call_de, extra);
 	// nice idea to let the user edit the outgoing message right away... but we don't necessarily want to log it
 	// field_set("TEXT", ft8_tx_text);
+	// TODO time-formatting helper, 0.5-sec resolution when needed
 	sprintf(buff, "%02d%02d%02d  TX     %4d ~ %s\n", t->tm_hour, t->tm_min, t->tm_sec, ft8_pitch, ft8_tx_text);
 	write_console(STYLE_FT8_QUEUED, buff);
 
-	sbitx_ft8_encode_3f(call_to, call_de, extra, false);
+	sbitx_ft8_encode_3f(call_to, call_de, extra);
 
 	// also set the times of transmission
 	char str_tx1st[10], str_repeat[10];
@@ -852,14 +919,11 @@ void ft8_tx_3f(const char* call_to, const char* call_de, const char* extra) {
 	// if it is a CQ message, then wait for the slot
 	if (!strncmp(call_to, "CQ ", 3)) {
 		ft8_tx1st = !strcmp(str_tx1st, "ON");
-	return;
+		return;
 	}
 }
 
 void *ft8_thread_function(void *ptr){
-	FILE *pf;
-	char buff[1000], mycallsign_upper[20]; //there are many ways to crash sbitx, bufferoverflow of callsigns is 1
-
 	//wake up every 100 msec to see if there is anything to decode
 	while(1){
 		usleep(1000);
@@ -868,7 +932,7 @@ void *ft8_thread_function(void *ptr){
 			continue;
 
 		ft8_do_decode = 0;
-		sbitx_ft8_decode(ft8_rx_buffer, ft8_rx_buff_index, true);
+		sbitx_ft8_decode(ft8_rx_buffer, ft8_rx_buff_index);
 		//let the next batch begin
 		ft8_rx_buff_index = 0;
 	}
@@ -876,8 +940,9 @@ void *ft8_thread_function(void *ptr){
 
 // the ft8 sampling is at 12000, the incoming samples are at
 // 96000 samples/sec
-void ft8_rx(int32_t *samples, int count){
+void ft8_rx(int32_t *samples, int count) {
 
+	bool is_ft4 = !strcmp(field_str("MODE"), "FT4");
 	int decimation_ratio = 96000/12000;
 
 	//if there is an overflow, then reset to the begining
@@ -891,24 +956,34 @@ void ft8_rx(int32_t *samples, int count){
 		//ft8_rx_buff[ft8_rx_buff_index++] = samples[i];
 		ft8_rx_buffer[ft8_rx_buff_index++] = samples[i] / 200000000.0f;
 
-	int now = time(NULL);
-	if (now != wallclock)
-		wallclock = now;
-	else
+	int time_was = wallclock_day_ms;
+	ftx_update_clock();
+	// we only need to check every half-second
+	if (time_was / 500 == wallclock_day_ms / 500)
 		return;
 
-	int slot_second = wallclock % 15;
-	if (slot_second == 0)
+	int slot_time = wallclock_day_ms % 15000;
+	int min_secs = 12000;
+	int slot_time_decode = 13000;
+	if (is_ft4) {
+		slot_time = wallclock_day_ms % 7500;
+		min_secs = 6000;
+		slot_time_decode = 13000 / 2;
+	}
+//~ printf("time %d -> %d; slot %d; ft8_rx_buff_index %d\n", time_was % 60000, wallclock_day_ms % 60000, slot_time, ft8_rx_buff_index);
+
+	if (slot_time < 500)
 		ft8_rx_buff_index = 0;
 
-//	printf("ft8 decoding trigger index %d, slot_second %d\n", ft8_rx_buff_index, slot_second);
-	//we should have atleast 12 seconds of samples to decode
-	if (ft8_rx_buff_index >= 13 * 12000 && slot_second > 13)
+	//we should have at least 6 or 12 seconds of samples to decode
+	if (ft8_rx_buff_index >= 13 * min_secs && slot_time > slot_time_decode) {
 		ft8_do_decode = 1;
+//~ printf("ft8_rx decoding trigger index %d, clock %d, slot_time %d\n", ft8_rx_buff_index, wallclock_day_ms % 60000, slot_time);
+	}
 }
 
-void ft8_poll(int seconds, int tx_is_on){
-	static int last_second = 0;
+void ft8_poll(int tx_is_on){
+	bool is_ft4 = !strcmp(field_str("MODE"), "FT4");
 
 	//if we are already transmitting, we continue
 	//until we run out of ft8 sampels
@@ -922,19 +997,43 @@ void ft8_poll(int seconds, int tx_is_on){
 		return;
 	}
 
-	if (!ft8_repeat || seconds == last_second)
+	if (!ft8_repeat)
 		return;
 
-	//we poll for this only once every second
-	//we are here only if we are rx-ing and we have a pending transmission
-	last_second = seconds = seconds % 60;
+	ftx_update_clock();
 
-	if (
-		(ft8_tx1st == 1 && ((seconds >= 0  && seconds < 15) ||
-			(seconds >=30 && seconds < 45))) ||
-		(ft8_tx1st == 0 && ((seconds >= 15 && seconds < 30)||
-			(seconds >= 45 && seconds < 59)))){
-		ft8_start_tx(seconds % 15);
+	//we poll for this only once every half-second
+	//we are here only if we are rx-ing and we have a pending transmission
+	bool start = false;
+	if (is_ft4) {
+		// FT4: two transmissions take 15 secs; are we interested in the first slot or the second?
+		int two_slot_clock = wallclock_day_ms % 15000;
+		if (two_slot_clock < 7500) {
+			if (ft8_tx1st)
+				start = true;
+		} else {
+			if (!ft8_tx1st)
+				start = true;
+		}
+		if (start) {
+			//~ printf("START FT4: tx1st %d wallclock sec %d two_slot_clock %d\n", ft8_tx1st, wallclock_day_ms % 60000, two_slot_clock);
+			ftx_start_tx(wallclock_day_ms % 7500);
+		}
+	} else {
+		// FT8: two transmissions take 30 secs; are we interested in the first slot or the second?
+		int two_slot_clock = wallclock_day_ms % 30000;
+		if (two_slot_clock < 15000) {
+			if (ft8_tx1st)
+				start = true;
+		} else {
+			if (!ft8_tx1st)
+				start = true;
+		}
+		if (start)
+			ftx_start_tx(wallclock_day_ms % 15000);
+	}
+
+	if (start) {
 		if (ft8_tx_nsamples)
 			tx_on(TX_SOFT);
 		ft8_repeat--;
@@ -953,28 +1052,28 @@ float ft8_next_sample(){
 }
 
 bool is_token_char(char ch) {
-    switch(ch) {
-	case 0: // quick check for terminator: faster than isalnum(), perhaps
-	    return false;
-	case '+':
-	case '-':
-	case '/':
-	    return true;
-	default:
-	    return isalnum(ch);
-    }
+	switch(ch) {
+		case 0: // quick check for terminator: faster than isalnum(), perhaps
+			return false;
+		case '+':
+		case '-':
+		case '/':
+			return true;
+		default:
+			return isalnum(ch);
+	}
 }
 
 // like strncpy, but skips <> brackets (as found in hashed callsigns),
 // stops at the end of alphanumeric characters plus -+/, and returns count copied
 int tokncpy(char *dst, const char *src, size_t dsize){
-    if (*src == '<')
-	++src;
-    int c = 0;
-    for (; c < dsize && is_token_char(*src); ++c)
-	*dst++ = *src++;
-    *dst = 0;
-    return c;
+	if (*src == '<')
+		++src;
+	int c = 0;
+	for (; c < dsize && is_token_char(*src); ++c)
+		*dst++ = *src++;
+	*dst = 0;
+	return c;
 }
 
 /* these are used to process the current message */
@@ -982,7 +1081,7 @@ static char m1[32], m2[32], m3[32], m4[32], signal_strength[10], mygrid[10],
 	reply_message[100];
 static int rx_pitch, confidence_score, msg_time;
 static const char *call = NULL, *exchange = NULL,
-    *report_send = NULL, *report_received = NULL, *mycall = NULL;
+	*report_send = NULL, *report_received = NULL, *mycall = NULL;
 
 int ft8_message_tokenize(char *message){
 	char *p;
@@ -1043,30 +1142,37 @@ void set_call_field(const char *s) {
 	field_set("CALL", trim_brackets(call));
 }
 
+/*!
+	Decide whether to reply on the even or odd timeslot, based on
+	the received second \a msg_second within the minute.
+	(i.e. \a msg_second is from 0 to 59)
+*/
+static void set_reply_tx1st(int msg_second)
+{
+	// When replying to an FT8 message that started in the 0- or 30-second "even" timeslot,
+	// send in the "odd" 15- or 45-second timeslot; and vice-versa.
+	// FT4 is similar, except we have 8 slots per minute.
+	const int slot_len = (!strcmp(field_str("MODE"), "FT4") ? 7500 : 15000);
+	const int msg_ms = 1000 * msg_second;
+	// integer division is truncation: round to the nearest timeslot instead
+	const int slot_in_minute = (msg_ms + slot_len / 2) / slot_len;
+	// time 0 is slot 0: that's even, set ft8_tx1st = 0 to reply in odd slot;
+	// FT8 15 secs is slot 1: that's odd, set ft8_tx1st = 1 to reply in even slot;
+	// FT8 22.5 secs is slot 3: that's odd, set ft8_tx1st = 1 to reply in even slot (e.g. 30 or 45 secs)
+	ft8_tx1st = slot_in_minute % 2;
+	printf("msg_second %d slot_in_minute %d odd? %d reply tx1st? %d\n", msg_second, slot_in_minute, slot_in_minute % 2, ft8_tx1st);
+}
+
 // this kicks stars a new qso either as a CQ message or
 // as a reply to someone's cq or as a 'break' with signal report to
 // a concluding qso
 void ft8_on_start_qso(char *message){
 	modem_abort();
 	tx_off();
-	if (strcmp(call, m1)) { // only wipe if new call
-		call_wipe();
-	}
+	call_wipe();
+	set_reply_tx1st(msg_time % 100);
 
-	//for cq message that started on 0 or 30th second, use the 15 or 45 and
-	//vice versa
-	int msg_second = msg_time % 100;
-	if (msg_second < 15 || (msg_second >= 30 && msg_second < 45))
-		ft8_tx1st = 0; //we tx on 2nd and 4ht slots for msgs on 1st and 3rd
-	else
-		ft8_tx1st = 1;
-
-    if (!strcmp(m2, mycall)){ // own transmission clicked - restart qso
-		set_call_field(m1);
-		call = m1;
-		sprintf(reply_message, "%s %s %s", call, mycall, mygrid); //
-	}
-	else if (!strcmp(m1, "CQ")){
+	if (!strcmp(m1, "CQ")){
 		if (m4[0]){
 			set_call_field(m3);
 			field_set("EXCH", m4);
@@ -1084,8 +1190,6 @@ void ft8_on_start_qso(char *message){
 	else if (!strcmp(m1, mycall)){
 		if (!m2[0])
 			return;
-		char cur_call[20];
-		get_field_value_by_label("CALL", cur_call);
 		set_call_field(m2);
 		field_set("SENT", signal_strength);
 		LOG(LOG_DEBUG, "ft8_on_start_qso cold call: rst s %s\n", signal_strength);
@@ -1097,9 +1201,6 @@ void ft8_on_start_qso(char *message){
 		else {
 			field_set("RECV", m3);
 			sprintf(reply_message, "%s %s R%s", call, mycall, signal_strength);
-			if (strcmp(m2, cur_call)){ // other  than previous caller - clear EXCH
-				field_set("EXCH", "");
-			}
 		}
 	}
 	else { //we are breaking into someone else's qso
@@ -1110,7 +1211,8 @@ void ft8_on_start_qso(char *message){
 			field_set("EXCH", "");
 		}
 		field_set("SENT", signal_strength);
-		sprintf(reply_message, "%s %s %s", call, mycall, mygrid); //signal_strength);
+		LOG(LOG_DEBUG, "ft8_on_start_qso break-in: rst s %s\n", signal_strength);
+		sprintf(reply_message, "%s %s %s", call, mycall, signal_strength);
 	}
 	field_set("NR", mygrid);
 	ft8_tx(reply_message, ft8_pitch);
@@ -1134,17 +1236,50 @@ void ft8_on_signal_report(){
 		snprintf(report, sizeof(report), "R%s", report_send);
 		ft8_tx_3f(call, mycall, report);
 	}
-	enter_qso();
+
+	//Disabled this because of early logging - W9JES
+	//enter_qso();
 }
 
 /*!
-    Start or continue a QSO as appropriate for the \a message:
-    \a operation may be FT8_START_QSO or FT8_CONTINUE_QSO
-    This should mostly not be used, because it throws away information that we already have:
-    if \a message came from ft8_lib, we also have spans to identify the fields;
-    or if we want to start a QSO, call ft8_call() above (which depends
-    on fields containing information that we already have).
-    The remaining legitimate usecase is only when the user types the message in the "TEXT" field.
+	start a QSO: call the callsign specified by the "CALL" field,
+	based on a previous selected message that occurred at time \a sel_time.
+	The "SENT" field may hold previously-observed RST,
+	and "EXCH" may hold the recipient's grid.
+*/
+void ft8_call(int sel_time) {
+
+	call = field_str("CALL");
+	if (!call[0]) {
+		printf("CALL field empty: nobody to call\n");
+		return;
+	}
+
+	modem_abort();
+	tx_off();
+
+	exchange = field_str("EXCH");
+	report_send = field_str("SENT");
+	mycall = field_str("MYCALLSIGN");
+	// initial pitch; but it can also be adjusted between timeslots
+	// (audio is re-generated in ftx_start_tx())
+	ft8_pitch = field_int("TX_PITCH");
+	//use only the first 4 letters of the grid
+	strcpy(mygrid, field_str("MYGRID"));
+	mygrid[4] = 0;
+	field_set("NR", mygrid);
+	set_reply_tx1st(sel_time % 100);
+	ft8_tx_3f(call, mycall, mygrid);
+}
+
+/*!
+	Start or continue a QSO as appropriate for the \a message:
+	\a operation may be FT8_START_QSO or FT8_CONTINUE_QSO
+	This should mostly not be used, because it throws away information that we already have:
+	if \a message came from ft8_lib, we also have spans to identify the fields;
+	or if we want to start a QSO, call ft8_call() above (which depends
+	on fields containing information that we already have).
+	The remaining legitimate usecase is only when the user types the message in the "TEXT" field.
 */
 void ft8_process(char *message, int operation){
 	char buff[100], reply_message[100], *p;
@@ -1189,6 +1324,7 @@ void ft8_process(char *message, int operation){
 
 	if (!strcmp(m3, "73")){
 		ft8_abort();
+		enter_qso(); // W9JES
 		ft8_repeat = 0;
 		return;
 	}
