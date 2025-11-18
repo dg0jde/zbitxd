@@ -63,6 +63,7 @@
 				<option value="CW">CW</option>
 				<option value="CWR">CWR</option>
 				<option value="FT8">FT8</option>
+				<option value="FT8">FT4</option>
 				<option value="DIGITAL">DIGITAL</option> 
 				<option value="2TONE">2TONE</option>
 			</select>
@@ -1005,8 +1006,8 @@ function spectrum_update(update){
 	ctx.stroke();
 
 
-	//draw the tx line separately only for FT8 
-	if (mode != "FT8")
+	//draw the tx line separately only for FTx 
+	if (mode !== "FT8" && mode !== "FT4")
 		return;
 
 	ctx.beginPath();
@@ -1044,7 +1045,7 @@ function waterfall_update(update){
 	var hz_per_pixel = w.width / calculated_span;
 	var repeat = 3;
 
-	if (mode == 'FT8')
+	if (mode === "FT8" || mode === "FT4")
 		repeat = 1;
 	else if (mode == 'CW' || mode == 'CWR')
 		repeat = 2;
@@ -1059,7 +1060,7 @@ function waterfall_update(update){
 		rx_spot = w.width/2 + (rx_pitch * hz_per_pixel);
 	rx_spot = Math.round(rx_spot);
 
-	if (mode == 'FT8'){
+	if (mode === "FT8" || mode === "FT4"){
 		tx_spot = w.width/2 + (tx_pitch * hz_per_pixel);
 		tx_spot = Math.round(tx_spot);
 	}
@@ -2208,6 +2209,7 @@ function mode_set(new_mode){
 			$("#Voice_ui").show();
 			logger_set_macro("CW1");
 			break;
+		case 'FT4':
 		case 'FT8':
 			sp.height = 50;
 			wf.height=50;
