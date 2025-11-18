@@ -51,6 +51,8 @@ adduser:
 	-adduser --system --group --home $(DESTDIR)/$(STATEDIR) --disabled-password $(OWNER)
 	-adduser $(OWNER) audio
 	-adduser $(OWNER) gpio
+	-echo "$(OWNER) ALL=NOPASSWD: /sbin/shutdown -h now" >/etc/sudoers.d/999_zbitxd
+	-chmod 440 /etc/sudoers.d/999_zbitxd
 
 install: adduser
 	install -D --mode=755 $(TARGET) $(DESTDIR)/$(BINDIR)/$(TARGET)
