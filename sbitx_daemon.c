@@ -640,7 +640,14 @@ void field_init(){
 		active_layout[i].updated_at= 0;
 }
 
-//set the field directly to a particuarl value, programmatically
+int set_field_int(const char *id, int value)
+{
+	char buf[16];
+	snprintf(buf, sizeof(buf), "%d", value);
+	return set_field(id, buf);
+}
+
+//set the field directly to a particular value, programmatically
 int set_field(const char *id, const char *value){
 	struct field *f = get_field(id);
 	int v;
