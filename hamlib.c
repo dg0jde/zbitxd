@@ -101,7 +101,7 @@ void send_response(char *response){
 int in_tx = 0;
 void send_freq(){
   char response[20];
-  sprintf(response, "%d\n", get_freq());
+  snprintf(response, sizeof(response), "%d\n", get_freq());
   send_response(response);
 }
 
@@ -113,7 +113,7 @@ void hamlib_set_freq(char *f){
   else
     freq = atoi(f);
   send_response("RPRT 0\n");
-	sprintf(cmd, "freq %d", freq);
+	snprintf(cmd, sizeof(cmd), "freq %d", freq);
 	cmd_exec(cmd);
 //	set_freq(freq);
 }
