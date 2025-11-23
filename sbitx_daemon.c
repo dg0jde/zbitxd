@@ -48,9 +48,6 @@ The initial sync between the gui values, the core radio values, settings, et al 
 #include "hist_disp.h"
 #include "configure.h"
 
-#define FT8_START_QSO 1
-#define FT8_CONTINUE_QSO 0
-void ft8_process(char *received, int operation);
 void change_band(char *request);
 
 /* command  buffer for commands received from the remote */
@@ -2556,7 +2553,7 @@ void zbitx_poll(int all){
 		if(!strncmp(buff, "FT8 ", 4)){
 			char ft8_message[100];
 			hd_strip_decoration(ft8_message, buff);
-			//ft8_process(ft8_message, FT8_START_QSO);
+			//ft8_process(ft8_message, FTX_START_QSO);
 			printf("FT4/8 from zbitx: %s\n", ft8_message);
 			remote_execute(ft8_message);
 		}
@@ -3163,7 +3160,7 @@ void pre_ft8_check(char* message) {
 		set_field("#ft8_check", result);
 
 		if (cnt == 0 || equal_last_check == 0) {
-			ft8_process(message, FT8_START_QSO);
+			ft8_process(message, FTX_START_QSO);
 		}
 	}
 }
@@ -3207,7 +3204,7 @@ void cmd_exec(char *cmd){
 	char response[100];
 
 	if (!strcmp(exec, "FT8")){
-		ft8_process(args, FT8_START_QSO);
+		ft8_process(args, FTX_START_QSO);
 	}
 	else if (!strcmp(exec, "FT8_check")) {
 		pre_ft8_check(args);

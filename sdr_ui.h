@@ -79,7 +79,7 @@ void key_pressed(char c);
 int field_set(const char *label, const char *new_value);
 int get_field_value(const char *id, char *value);
 int get_field_value_by_label(const char *label, char *value);
-const char *field_str(const char *label);
+const char *field_str(const char *label); // TODO look up by "cmd" not label
 int field_int(char *label);
 void write_console(sbitx_style style, const char *text);
 // write plain text, with semantically-tagged spans that imply styling
