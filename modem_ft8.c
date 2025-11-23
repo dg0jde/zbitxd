@@ -821,7 +821,7 @@ static bool ftx_would_send() {
     if (is_cq) {
 	ft8_tx1st = !strcmp(field_str("FT8_TX1ST"), "ON");
 	ft8_cq_alt = !strcmp(field_str("FT8_AUTO"), "CQ_ALT");
-	ft8_xota = !strcmp(field_str("FT8_AUTO"), "xOTA");
+	ft8_xota = !strcasecmp(field_str("FT8_AUTO"), "xOTA");
     } else {
 	ft8_xota = false;
     }
