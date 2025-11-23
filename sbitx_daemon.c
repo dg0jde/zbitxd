@@ -671,7 +671,7 @@ int set_field(const char *id, const char *value){
 		if (debug)
 			printf("first token [%s]\n", p);
 		while(p){
-			if (!strcmp(value, p))
+			if (!strcasecmp(value, p))
 				break;
 			else
 				prev = p;
@@ -3049,7 +3049,9 @@ void do_control_action(char *cmd){
 
   	args[0] = 0;
 
-		//copy the exec
+		//~ printf("cmd '%s'\n", cmd);
+
+		// copy the exec
 		for (i = 0; *cmd > ' ' && i < sizeof(exec) - 1; i++)
 			exec[i] = *cmd++;
 		exec[i] = 0; 
@@ -3206,6 +3208,13 @@ void cmd_exec(char *cmd){
 
 	char response[100];
 
+	// simple replacements / alternate forms
+	if (!strcmp(exec, "AUTO")) {
+		strcpy(exec, "FT8_AUTO");
+		if (!strcasecmp(args, "CQ ALT"))
+			strcpy(args, "CQ_ALT");
+	}
+	// special cases
 	if (!strcmp(exec, "FT8")){
 		ft8_process(args, FTX_START_QSO);
 	}
@@ -3362,6 +3371,14 @@ void cmd_exec(char *cmd){
 		printf("executing macro %s\n", exec);
 		do_macro(get_field_by_label(exec), FIELD_UPDATE, 0, 0, 0);
 	}
+	// zbitx front panel oddities
+	else if (!strcmp(exec, "TX_CQ"))
+	{
+		struct field *f = get_field("#ft8_tx1st");
+		const bool on = !strcmp(args, "EVEN");
+		set_field(f->cmd, on ? "ON" : "OFF");
+	}
+	// the normal case, finally
 	else {
 		char field_name[32];
 		//conver the string to upper if not already so
