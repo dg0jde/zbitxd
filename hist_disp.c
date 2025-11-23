@@ -9,6 +9,8 @@
 #include "hist_disp.h"
 #include "configure.h"
 
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 bool isLetter(char c) {
     return c >= 'A' && c <= 'Z';
 }
@@ -117,8 +119,7 @@ int ff_lookup_style(char* id, int style, int style_default) {
 	return style;
 }
 
-char *ff_cs(char * markup, int style) {
-    markup[0] = HD_MARKUP_CHAR;
+char ff_char(int style) {
     /* used to be 'A' + style, where style came from these:
     #define FONT_FIELD_LABEL 0
     #define FONT_FIELD_VALUE 1
@@ -144,70 +145,61 @@ char *ff_cs(char * markup, int style) {
     switch (style) {
 	// console styles
 	case STYLE_LOG:
-	    markup[1] = 'A' + 5;
-	    break;
+	    return 'A' + 5;
 	case STYLE_MYCALL:
-	    markup[1] = 'A' + 16;
-	    break;
+	    return 'A' + 16;
 	case STYLE_CALLER:
-	    markup[1] = 'A' + 17;
-	    break;
+	    return 'A' + 17;
 	case STYLE_CALLEE:
-	    markup[1] = 'A' + 5;
-	    break;
+	    return 'A' + 5;
 	case STYLE_GRID:
-	    markup[1] = 'A' + 18;
-	    break;
+	    return 'A' + 18;
+	case STYLE_TIME:
+	case STYLE_FREQ:
 	case STYLE_FT8_RX:
-	    markup[1] = 'A' + 6;
-	    break;
+	    return 'A' + 6;
+	case STYLE_SNR:
 	case STYLE_FT8_TX:
-	    markup[1] = 'A' + 7;
-	    break;
+	    return 'A' + 7;
 	case STYLE_FT8_QUEUED:
-	    markup[1] = 'A' + 14;
-	    break;
+	    return 'A' + 14;
 	case STYLE_FT8_REPLY:
-	    markup[1] = 'A' + 15;
-	    break;
+	    return 'A' + 15;
 	case STYLE_CW_RX:
-	    markup[1] = 'A' + 9;
-	    break;
+	    return 'A' + 9;
 	case STYLE_CW_TX:
-	    markup[1] = 'A' + 10;
-	    break;
+	    return 'A' + 10;
 	case STYLE_FLDIGI_RX:
-	    markup[1] = 'A' + 11;
-	    break;
+	    return 'A' + 11;
 	case STYLE_FLDIGI_TX:
-	    markup[1] = 'A' + 12;
-	    break;
+	    return 'A' + 12;
 	case STYLE_TELNET:
-	    markup[1] = 'A' + 13;
-	    break;
+	    return 'A' + 13;
+
 	// field styles
 	case STYLE_FIELD_LABEL:
-	    markup[1] = 'A' + 0;
-	    break;
+	    return 'A' + 0;
 	case STYLE_FIELD_VALUE:
-	    markup[1] = 'A' + 1;
-	    break;
+	    return 'A' + 1;
 	case STYLE_LARGE_FIELD:
-	    markup[1] = 'A' + 2;
-	    break;
+	    return 'A' + 2;
 	case STYLE_LARGE_VALUE:
-	    markup[1] = 'A' + 3;
-	    break;
+	    return 'A' + 3;
 	case STYLE_SMALL:
-	    markup[1] = 'A' + 4;
-	    break;
+	    return 'A' + 4;
 	case STYLE_SMALL_FIELD_VALUE:
-	    markup[1] = 'A' + 8;
-	    break;
+	    return 'A' + 8;
 	case STYLE_BLACK:
-	    markup[1] = 'A' + 19;
-	    break;
+	    return 'A' + 19;
+	default:
+	    printf("warning: unhandled style %d treated as \"log\"\n", style);
+	    return 'A' + 5;
     }
+}
+
+char *ff_cs(char * markup, int style) {
+    markup[0] = HD_MARKUP_CHAR;
+    markup[1] = ff_char(style);
     markup[2] = 0;
     return markup;
 }
@@ -291,6 +283,8 @@ void hd_strip_decoration(char * ft8_message, char * decorated) {
 	*ft8_message = 0;
 }
 
+// TODO rewrite like ftx_zbitx_decorate but keep the whole message,
+// and use text_span_semantics instead of trying to re-parse the message.
 int hd_decorate(int style, const char * message, char * decorated) {
 	switch (style) {
 	case STYLE_FT8_RX:
@@ -329,3 +323,71 @@ int hd_decorate(int style, const char * message, char * decorated) {
 	}
 	return 0;
 }
+
+/*!
+    "Decorates" an FT8/FT4 \a message according to semantics \a sem,
+    writing to the given \a out buffer up to \a maxlen characters.
+    This variant (as opposed to hd_decorate) tries to make it compact for the
+    zbitx front panel, by condensing timestamps and omitting the tilde separator (if any).
+    Returns the number of bytes written to \a out.
+    But alas, this doesn't work because ft8_update() in ft8.cpp for the front panel
+    is trying to assume it knows what the fields are, by position, and skipping some.
+    It ends up skipping everything and dispaying nothing.  Needs work...
+*/
+/*
+int ftx_zbitx_decorate(const char *message, int len, const text_span_semantic *sems, int sem_count, char *out, int maxlen) {
+    //~ printf("ftx_zbitx_decorate %s sems %d\n", message, sem_count);
+    char *outp = out;
+    char default_style = ff_char(STYLE_LOG);
+    int written = 0;
+    //~ if (sem_count > 0)
+	//~ default_style = ff_char(sems[0].semantic);
+    char last_style = default_style;
+    *out = 0;
+    for (int si = 1; si < sem_count; ++si) {
+	const int start_col = sems[si].start_column;
+	const int sem = sems[si].semantic;
+	// what comes after time and before SNR is "candidate score": omit it to save space
+	if (sem == STYLE_SNR)
+	    written = start_col;
+	else if (start_col > written) {
+printf("output text (style %c vs last %c) from col %d before sem %d:%d	at col %d after '%s'\n", default_style, last_style, written, si, sem, start_col, out);
+	    if (default_style != last_style && start_col - written > 1) {
+		*outp++ = HD_MARKUP_CHAR; *outp++ = default_style;
+		last_style = default_style;
+	    }
+	    if (*(message + written + 1) == '~') // in case of " ~ ", one space is enough
+		*outp++ = ' ';
+	    else
+		outp = stpncpy(outp, message + written, MIN(maxlen - written, start_col - written));
+	    *outp = 0;
+	    written = start_col;
+	}
+printf("sems %d: %c; output text (vs last style %c) from col %d with len %d after '%s'\n", si, ff_char(sem), last_style, start_col, sems[si].length, out);
+	if (ff_char(sem) != last_style) {
+	    last_style = ff_char(sem);
+	    *outp++ = HD_MARKUP_CHAR; *outp++ = last_style;
+	}
+	// special case: shorten the time representation (omit hours and tenths-of-seconds, so only 4 digits and a space)
+	if (sem == STYLE_TIME) {
+	    outp = stpncpy(outp, message + written + 2, MIN(maxlen - written, 4));
+	    *outp++ = ' ';
+	} else {
+	    outp = stpncpy(outp, message + written, MIN(maxlen - written, sems[si].length));
+	}
+	*outp = 0;
+	written += sems[si].length;
+    }
+    if (len < written) {
+	if (default_style != last_style) {
+	    last_style = default_style;
+	    *outp++ = HD_MARKUP_CHAR; *outp++ = last_style;
+	}
+	outp = stpncpy(outp, message + written, maxlen - written);
+	*outp = 0;
+    }
+    *outp++ = '\n';
+    *outp = 0;
+    return outp - out;
+}
+*/

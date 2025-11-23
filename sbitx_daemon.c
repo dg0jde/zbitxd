@@ -945,8 +945,20 @@ void write_console_semantic(const char *text, const text_span_semantic *sem, int
 	hd_decorate(sem[0].semantic, text, decorated);
 	web_write(sem[0].semantic, decorated);
 	write_to_remote_app(sem[0].semantic, text);
+	// If it's FTx, rework it for the zbitx front panel
+	if (sem_count > 0 && sem[0].semantic >=  STYLE_FT8_RX && sem[0].semantic <= STYLE_FT8_REPLY) {
+	    // strip the decimal after the time: it would take too much space on the display,
+	    // and the current front-panel firmware gets confused by it
+	    char *dot = strchr(decorated, '.');
+	    if (dot)
+		memmove(dot, dot + 2, strlen(dot) - 1);
+	    // rewrite it in a way that ought to work but doesn't
+	    //~ ftx_zbitx_decorate(text, len, sem, sem_count, decorated, sizeof(decorated));
+	}
 	zbitx_write(sem[0].semantic, decorated);
     }
+
+//~ int ftx_zbitx_decorate(const char *message, int len, const text_span_semantic *sem, int sem_count, char *out, int maxlen) {
 
     const char *next_char = text;
     char *console_line_string = console_stream[console_current_line].text;
@@ -2399,8 +2411,9 @@ void zbitx_write(int style, char *text){
 		printf("*zbitx_write update is oversized\n");
 		return;
 	}
+	//~ printf("zcons '%s'\n", text);
 	snprintf(buffer, sizeof(buffer), "%d %s", old_style_font(style), text);
-	char *p = buffer;		
+	char *p = buffer;
 	if (q_zbitx_console.overflow)
 		q_empty(&q_zbitx_console);
 	while (*p)

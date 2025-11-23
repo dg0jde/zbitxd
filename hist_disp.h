@@ -4,6 +4,7 @@
 
 void hd_createGridList();
 int hd_decorate(int style, const char * message, char * decorated);
+//~ int ftx_zbitx_decorate(const char *message, int len, const text_span_semantic *sems, int sem_count, char *out, int maxlen);
 void hd_strip_decoration(char * ft8_message, char * decorated);
 int hd_length_no_decoration(char * decorated);
 int old_style_font(int style);

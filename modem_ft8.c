@@ -1139,14 +1139,13 @@ int ft8_message_tokenize(char *message){
 	if (!p) return -1;
 	rx_pitch = atoi(p);
 
-	//santiy check, we should get a tilde '~' now
+	// we should get a tilde '~' now, but not if it comes from the zbitx front panel
 	p = strtok(NULL, " \r\n");
 	if (!p)
 		return -1;
-	if (strcmp(p, "~"))
-		return -1;
+	if (!strcmp(p, "~"))
+		p = strtok(NULL, " \r\n");
 
-	p = strtok(NULL, " \r\n");
 	if (!p) return -1;
 	tokncpy(m1, p, sizeof(m1));
 
