@@ -511,11 +511,14 @@ struct field main_controls[] = {
   {"#smeter", NULL, 1000, -1000, 50, 50, "SMETER", 40, "3000", FIELD_NUMBER,
     "", 300, 3000, 50, 0},
 
-	//FT8 controls
+	// FTx controls
+	// TODO rename FT8 to FTx; use cmd instead of label to identify them (labels should be able to have spaces)
 	{"#ft8_check", NULL, 1000, -1000, 50, 50, "CHECK", 50, "check", FIELD_TEXT, 
 		"nobody", 0,128,0,0},
 	{"#ft8_auto", NULL, 1000, -1000, 50, 50, "FT8_AUTO", 40, "ON", FIELD_SELECTION,
 		"OFF/ON/CQ_ALT/xOTA", 0, 0, 0, FT8_CONTROL},
+	// TODO change to "FTx CQ TX" FIELD_SELECTION "EVEN/ODD"; but this affects stored settings, web UI, and command processing
+	// a label is not just a label, actually (but it should be)
 	{"#ft8_tx1st", NULL, 1000, -1000, 50, 50, "FT8_TX1ST", 40, "ON", FIELD_TOGGLE, 
 		"ON/OFF", 0,0,0, FT8_CONTROL},
   { "#ft8_repeat", NULL, 1000, -1000, 50, 50, "FT8_REPEAT", 40, "5", FIELD_NUMBER,

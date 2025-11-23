@@ -5,6 +5,7 @@ typedef enum {
     FTX_CONTINUE_QSO
 }  ftx_operation;
 
+// functions for FT8 and FT4
 void ft8_rx(int32_t *samples, int count);
 void ft8_init();
 void ft8_abort();
