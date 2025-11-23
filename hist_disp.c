@@ -52,9 +52,11 @@ int hd_next_token(const char* src, int start, char* tok, int tok_max, char * sep
 	tok[0] = 0;
 	if (src == NULL || src[start] == 0) 
 		return -1;
-	const char * p_sep;
-	int n, p;
 	int len = strlen(src);
+	if (start >= len)
+		return -2;
+	const char * p_sep;
+	int n = 0, p = 0;
 	if (len > 0 && src[len-1] == '\n') {
 		len--; // strip trailing newline
 	}
